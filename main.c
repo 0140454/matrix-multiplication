@@ -7,8 +7,8 @@
 
 #include <xmmintrin.h>
 
-#define TEST_W 4096
-#define TEST_H 4096
+#define TEST_W 1024
+#define TEST_H 1024
 
 #include "impl.c"
 
@@ -70,6 +70,34 @@ int main(int argc, char *argv[])
 
         assert(0 == memcmp(testout, expected, 16 * sizeof(int)) &&
                "Verification fails");
+    }
+
+    {
+        struct timespec start, end;
+        int *src1 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
+        int *src2 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
+        int *out1 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
+        int *out2 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
+        int *out3 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
+
+        srand(time(NULL));
+        for (int i = 0; i < TEST_H; ++i) {
+            for (int j = 0; j < TEST_W; ++j) {
+                src1[i * TEST_W + j] = rand();
+                src2[i * TEST_W + j] = rand();
+            }
+        }
+
+        clock_gettime(CLOCK_REALTIME, &start);
+        naive_multiply(src1, src2, out1, TEST_W, TEST_H, TEST_W, TEST_H);
+        clock_gettime(CLOCK_REALTIME, &end);
+        printf("naive: \t\t %ld us\n", diff_in_us(start, end));
+
+        free(src1);
+        free(src2);
+        free(out1);
+        free(out2);
+        free(out3);
     }
 
     return 0;
