@@ -5,7 +5,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include <xmmintrin.h>
+#include <smmintrin.h>
 
 #define TEST_W 1024
 #define TEST_H 1024
@@ -79,6 +79,7 @@ int main(int argc, char *argv[])
         int *out1 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
         int *out2 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
         int *out3 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
+        int *out4 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
 
         srand(time(NULL));
         for (int i = 0; i < TEST_H; ++i) {
@@ -102,11 +103,26 @@ int main(int argc, char *argv[])
         printf("submatrix: \t %ld us\n", diff_in_us(start, end));
 #endif
 
+#if defined(sse)
+        clock_gettime(CLOCK_REALTIME, &start);
+        sse_multiply(src1, src2, out3, TEST_W, TEST_H, TEST_W, TEST_H);
+        clock_gettime(CLOCK_REALTIME, &end);
+        printf("sse: \t %ld us\n", diff_in_us(start, end));
+#endif
+
+#if defined(sse_prefetch)
+        clock_gettime(CLOCK_REALTIME, &start);
+        sse_prefetch_multiply(src1, src2, out4, TEST_W, TEST_H, TEST_W, TEST_H);
+        clock_gettime(CLOCK_REALTIME, &end);
+        printf("sse_prefetch: \t %ld us\n", diff_in_us(start, end));
+#endif
+
         free(src1);
         free(src2);
         free(out1);
         free(out2);
         free(out3);
+        free(out4);
     }
 
     return 0;
