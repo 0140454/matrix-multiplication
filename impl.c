@@ -168,11 +168,11 @@ void sse_prefetch_multiply(int *src1, int *src2, int *dst, int src1_w,
             __m128i des3 = _mm_setzero_si128 ();
 
             for (int k = 0; k < src2_w; k += 4) {
-#define PFDIST  8
-                _mm_prefetch(src1 + (k + PFDIST + 0) * src1_w + y, _MM_HINT_T1);
-                _mm_prefetch(src1 + (k + PFDIST + 1) * src1_w + k, _MM_HINT_T1);
-                _mm_prefetch(src1 + (k + PFDIST + 2) * src1_w + k, _MM_HINT_T1);
-                _mm_prefetch(src1 + (k + PFDIST + 3) * src1_w + k, _MM_HINT_T1);
+#define SSE_PFDIST  8
+                _mm_prefetch(src1 + (k + SSE_PFDIST + 0) * src1_w + y, _MM_HINT_T1);
+                _mm_prefetch(src1 + (k + SSE_PFDIST + 1) * src1_w + k, _MM_HINT_T1);
+                _mm_prefetch(src1 + (k + SSE_PFDIST + 2) * src1_w + k, _MM_HINT_T1);
+                _mm_prefetch(src1 + (k + SSE_PFDIST + 3) * src1_w + k, _MM_HINT_T1);
 
                 __m128i I0 = _mm_loadu_si128((__m128i *)(src1 + (x + 0) * src1_w + k));
                 __m128i I1 = _mm_loadu_si128((__m128i *)(src1 + (x + 1) * src1_w + k));
@@ -280,6 +280,656 @@ void sse_prefetch_multiply(int *src1, int *src2, int *dst, int src1_w,
             _mm_storeu_si128((__m128i *)(dst + ((x + 1) * src2_w) + y), des1);
             _mm_storeu_si128((__m128i *)(dst + ((x + 2) * src2_w) + y), des2);
             _mm_storeu_si128((__m128i *)(dst + ((x + 3) * src2_w) + y), des3);
+        }
+    }
+}
+
+void avx_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
+                  int src2_w, int src2_h)
+{
+    for (int i = 0; i < src1_h; i += 8) {
+        for (int j = 0; j < src2_w; j += 8) {
+            __m256i ymm0, ymm1, ymm2, ymm3, ymm4, ymm5, ymm6, ymm7,
+                    ymm8, ymm9, ymm10, ymm11, ymm12, ymm13, ymm14, ymm15;
+
+            __m256i ymm16 = _mm256_setzero_si256();
+            __m256i ymm17 = _mm256_setzero_si256();
+            __m256i ymm18 = _mm256_setzero_si256();
+            __m256i ymm19 = _mm256_setzero_si256();
+            __m256i ymm20 = _mm256_setzero_si256();
+            __m256i ymm21 = _mm256_setzero_si256();
+            __m256i ymm22 = _mm256_setzero_si256();
+            __m256i ymm23 = _mm256_setzero_si256();
+
+            for (int k = 0; k < src2_h; k += 8) {
+                // load eight rows from source 2
+                ymm0 = _mm256_loadu_si256((__m256i *) (src2 + (k + 0) * src2_w + j));
+                ymm1 = _mm256_loadu_si256((__m256i *) (src2 + (k + 1) * src2_w + j));
+                ymm2 = _mm256_loadu_si256((__m256i *) (src2 + (k + 2) * src2_w + j));
+                ymm3 = _mm256_loadu_si256((__m256i *) (src2 + (k + 3) * src2_w + j));
+                ymm4 = _mm256_loadu_si256((__m256i *) (src2 + (k + 4) * src2_w + j));
+                ymm5 = _mm256_loadu_si256((__m256i *) (src2 + (k + 5) * src2_w + j));
+                ymm6 = _mm256_loadu_si256((__m256i *) (src2 + (k + 6) * src2_w + j));
+                ymm7 = _mm256_loadu_si256((__m256i *) (src2 + (k + 7) * src2_w + j));
+
+                // broadcast each elements from source 1
+                ymm8 = _mm256_set1_epi32(src1[(i + 0) * src1_w + k + 0]);
+                ymm9 = _mm256_set1_epi32(src1[(i + 0) * src1_w + k + 1]);
+                ymm10 = _mm256_set1_epi32(src1[(i + 0) * src1_w + k + 2]);
+                ymm11 = _mm256_set1_epi32(src1[(i + 0) * src1_w + k + 3]);
+                ymm12 = _mm256_set1_epi32(src1[(i + 0) * src1_w + k + 4]);
+                ymm13 = _mm256_set1_epi32(src1[(i + 0) * src1_w + k + 5]);
+                ymm14 = _mm256_set1_epi32(src1[(i + 0) * src1_w + k + 6]);
+                ymm15 = _mm256_set1_epi32(src1[(i + 0) * src1_w + k + 7]);
+
+                // multiply
+                ymm8 = _mm256_mullo_epi32(ymm8, ymm0); // row 1, 2
+                ymm9 = _mm256_mullo_epi32(ymm9, ymm1);
+                ymm8 = _mm256_add_epi32(ymm8, ymm9);
+
+                ymm10 = _mm256_mullo_epi32(ymm10, ymm2); // row 3, 4
+                ymm11 = _mm256_mullo_epi32(ymm11, ymm3);
+                ymm10 = _mm256_add_epi32(ymm10, ymm11);
+
+                ymm12 = _mm256_mullo_epi32(ymm12, ymm4); // row 5, 6
+                ymm13 = _mm256_mullo_epi32(ymm13, ymm5);
+                ymm12 = _mm256_add_epi32(ymm12, ymm13);
+
+                ymm14 = _mm256_mullo_epi32(ymm14, ymm6); // row 7, 8
+                ymm15 = _mm256_mullo_epi32(ymm15, ymm7);
+                ymm14 = _mm256_add_epi32(ymm14, ymm15);
+
+                ymm8 = _mm256_add_epi32(ymm8, ymm10); // sum
+                ymm12 = _mm256_add_epi32(ymm12, ymm14);
+                ymm8 = _mm256_add_epi32(ymm8, ymm12);
+
+                // save current result
+                ymm16 = _mm256_add_epi32(ymm16, ymm8);
+
+                // ---------------------------------------------------------- //
+                // broadcast each elements from source 1
+                ymm8 = _mm256_set1_epi32(src1[(i + 1) * src1_w + k + 0]);
+                ymm9 = _mm256_set1_epi32(src1[(i + 1) * src1_w + k + 1]);
+                ymm10 = _mm256_set1_epi32(src1[(i + 1) * src1_w + k + 2]);
+                ymm11 = _mm256_set1_epi32(src1[(i + 1) * src1_w + k + 3]);
+                ymm12 = _mm256_set1_epi32(src1[(i + 1) * src1_w + k + 4]);
+                ymm13 = _mm256_set1_epi32(src1[(i + 1) * src1_w + k + 5]);
+                ymm14 = _mm256_set1_epi32(src1[(i + 1) * src1_w + k + 6]);
+                ymm15 = _mm256_set1_epi32(src1[(i + 1) * src1_w + k + 7]);
+
+                // multiply
+                ymm8 = _mm256_mullo_epi32(ymm8, ymm0); // row 1, 2
+                ymm9 = _mm256_mullo_epi32(ymm9, ymm1);
+                ymm8 = _mm256_add_epi32(ymm8, ymm9);
+
+                ymm10 = _mm256_mullo_epi32(ymm10, ymm2); // row 3, 4
+                ymm11 = _mm256_mullo_epi32(ymm11, ymm3);
+                ymm10 = _mm256_add_epi32(ymm10, ymm11);
+
+                ymm12 = _mm256_mullo_epi32(ymm12, ymm4); // row 5, 6
+                ymm13 = _mm256_mullo_epi32(ymm13, ymm5);
+                ymm12 = _mm256_add_epi32(ymm12, ymm13);
+
+                ymm14 = _mm256_mullo_epi32(ymm14, ymm6); // row 7, 8
+                ymm15 = _mm256_mullo_epi32(ymm15, ymm7);
+                ymm14 = _mm256_add_epi32(ymm14, ymm15);
+
+                ymm8 = _mm256_add_epi32(ymm8, ymm10); // sum
+                ymm12 = _mm256_add_epi32(ymm12, ymm14);
+                ymm8 = _mm256_add_epi32(ymm8, ymm12);
+
+                // save current result
+                ymm17 = _mm256_add_epi32(ymm16, ymm8);
+
+                // ---------------------------------------------------------- //
+                // broadcast each elements from source 1
+                ymm8 = _mm256_set1_epi32(src1[(i + 2) * src1_w + k + 0]);
+                ymm9 = _mm256_set1_epi32(src1[(i + 2) * src1_w + k + 1]);
+                ymm10 = _mm256_set1_epi32(src1[(i + 2) * src1_w + k + 2]);
+                ymm11 = _mm256_set1_epi32(src1[(i + 2) * src1_w + k + 3]);
+                ymm12 = _mm256_set1_epi32(src1[(i + 2) * src1_w + k + 4]);
+                ymm13 = _mm256_set1_epi32(src1[(i + 2) * src1_w + k + 5]);
+                ymm14 = _mm256_set1_epi32(src1[(i + 2) * src1_w + k + 6]);
+                ymm15 = _mm256_set1_epi32(src1[(i + 2) * src1_w + k + 7]);
+
+                // multiply
+                ymm8 = _mm256_mullo_epi32(ymm8, ymm0); // row 1, 2
+                ymm9 = _mm256_mullo_epi32(ymm9, ymm1);
+                ymm8 = _mm256_add_epi32(ymm8, ymm9);
+
+                ymm10 = _mm256_mullo_epi32(ymm10, ymm2); // row 3, 4
+                ymm11 = _mm256_mullo_epi32(ymm11, ymm3);
+                ymm10 = _mm256_add_epi32(ymm10, ymm11);
+
+                ymm12 = _mm256_mullo_epi32(ymm12, ymm4); // row 5, 6
+                ymm13 = _mm256_mullo_epi32(ymm13, ymm5);
+                ymm12 = _mm256_add_epi32(ymm12, ymm13);
+
+                ymm14 = _mm256_mullo_epi32(ymm14, ymm6); // row 7, 8
+                ymm15 = _mm256_mullo_epi32(ymm15, ymm7);
+                ymm14 = _mm256_add_epi32(ymm14, ymm15);
+
+                ymm8 = _mm256_add_epi32(ymm8, ymm10); // sum
+                ymm12 = _mm256_add_epi32(ymm12, ymm14);
+                ymm8 = _mm256_add_epi32(ymm8, ymm12);
+
+                // save current result
+                ymm18 = _mm256_add_epi32(ymm16, ymm8);
+
+                // ---------------------------------------------------------- //
+                // broadcast each elements from source 1
+                ymm8 = _mm256_set1_epi32(src1[(i + 3) * src1_w + k + 0]);
+                ymm9 = _mm256_set1_epi32(src1[(i + 3) * src1_w + k + 1]);
+                ymm10 = _mm256_set1_epi32(src1[(i + 3) * src1_w + k + 2]);
+                ymm11 = _mm256_set1_epi32(src1[(i + 3) * src1_w + k + 3]);
+                ymm12 = _mm256_set1_epi32(src1[(i + 3) * src1_w + k + 4]);
+                ymm13 = _mm256_set1_epi32(src1[(i + 3) * src1_w + k + 5]);
+                ymm14 = _mm256_set1_epi32(src1[(i + 3) * src1_w + k + 6]);
+                ymm15 = _mm256_set1_epi32(src1[(i + 3) * src1_w + k + 7]);
+
+                // multiply
+                ymm8 = _mm256_mullo_epi32(ymm8, ymm0); // row 1, 2
+                ymm9 = _mm256_mullo_epi32(ymm9, ymm1);
+                ymm8 = _mm256_add_epi32(ymm8, ymm9);
+
+                ymm10 = _mm256_mullo_epi32(ymm10, ymm2); // row 3, 4
+                ymm11 = _mm256_mullo_epi32(ymm11, ymm3);
+                ymm10 = _mm256_add_epi32(ymm10, ymm11);
+
+                ymm12 = _mm256_mullo_epi32(ymm12, ymm4); // row 5, 6
+                ymm13 = _mm256_mullo_epi32(ymm13, ymm5);
+                ymm12 = _mm256_add_epi32(ymm12, ymm13);
+
+                ymm14 = _mm256_mullo_epi32(ymm14, ymm6); // row 7, 8
+                ymm15 = _mm256_mullo_epi32(ymm15, ymm7);
+                ymm14 = _mm256_add_epi32(ymm14, ymm15);
+
+                ymm8 = _mm256_add_epi32(ymm8, ymm10); // sum
+                ymm12 = _mm256_add_epi32(ymm12, ymm14);
+                ymm8 = _mm256_add_epi32(ymm8, ymm12);
+
+                // save current result
+                ymm19 = _mm256_add_epi32(ymm16, ymm8);
+
+                // ---------------------------------------------------------- //
+                // broadcast each elements from source 1
+                ymm8 = _mm256_set1_epi32(src1[(i + 4) * src1_w + k + 0]);
+                ymm9 = _mm256_set1_epi32(src1[(i + 4) * src1_w + k + 1]);
+                ymm10 = _mm256_set1_epi32(src1[(i + 4) * src1_w + k + 2]);
+                ymm11 = _mm256_set1_epi32(src1[(i + 4) * src1_w + k + 3]);
+                ymm12 = _mm256_set1_epi32(src1[(i + 4) * src1_w + k + 4]);
+                ymm13 = _mm256_set1_epi32(src1[(i + 4) * src1_w + k + 5]);
+                ymm14 = _mm256_set1_epi32(src1[(i + 4) * src1_w + k + 6]);
+                ymm15 = _mm256_set1_epi32(src1[(i + 4) * src1_w + k + 7]);
+
+                // multiply
+                ymm8 = _mm256_mullo_epi32(ymm8, ymm0); // row 1, 2
+                ymm9 = _mm256_mullo_epi32(ymm9, ymm1);
+                ymm8 = _mm256_add_epi32(ymm8, ymm9);
+
+                ymm10 = _mm256_mullo_epi32(ymm10, ymm2); // row 3, 4
+                ymm11 = _mm256_mullo_epi32(ymm11, ymm3);
+                ymm10 = _mm256_add_epi32(ymm10, ymm11);
+
+                ymm12 = _mm256_mullo_epi32(ymm12, ymm4); // row 5, 6
+                ymm13 = _mm256_mullo_epi32(ymm13, ymm5);
+                ymm12 = _mm256_add_epi32(ymm12, ymm13);
+
+                ymm14 = _mm256_mullo_epi32(ymm14, ymm6); // row 7, 8
+                ymm15 = _mm256_mullo_epi32(ymm15, ymm7);
+                ymm14 = _mm256_add_epi32(ymm14, ymm15);
+
+                ymm8 = _mm256_add_epi32(ymm8, ymm10); // sum
+                ymm12 = _mm256_add_epi32(ymm12, ymm14);
+                ymm8 = _mm256_add_epi32(ymm8, ymm12);
+
+                // save current result
+                ymm20 = _mm256_add_epi32(ymm16, ymm8);
+
+                // ---------------------------------------------------------- //
+                // broadcast each elements from source 1
+                ymm8 = _mm256_set1_epi32(src1[(i + 5) * src1_w + k + 0]);
+                ymm9 = _mm256_set1_epi32(src1[(i + 5) * src1_w + k + 1]);
+                ymm10 = _mm256_set1_epi32(src1[(i + 5) * src1_w + k + 2]);
+                ymm11 = _mm256_set1_epi32(src1[(i + 5) * src1_w + k + 3]);
+                ymm12 = _mm256_set1_epi32(src1[(i + 5) * src1_w + k + 4]);
+                ymm13 = _mm256_set1_epi32(src1[(i + 5) * src1_w + k + 5]);
+                ymm14 = _mm256_set1_epi32(src1[(i + 5) * src1_w + k + 6]);
+                ymm15 = _mm256_set1_epi32(src1[(i + 5) * src1_w + k + 7]);
+
+                // multiply
+                ymm8 = _mm256_mullo_epi32(ymm8, ymm0); // row 1, 2
+                ymm9 = _mm256_mullo_epi32(ymm9, ymm1);
+                ymm8 = _mm256_add_epi32(ymm8, ymm9);
+
+                ymm10 = _mm256_mullo_epi32(ymm10, ymm2); // row 3, 4
+                ymm11 = _mm256_mullo_epi32(ymm11, ymm3);
+                ymm10 = _mm256_add_epi32(ymm10, ymm11);
+
+                ymm12 = _mm256_mullo_epi32(ymm12, ymm4); // row 5, 6
+                ymm13 = _mm256_mullo_epi32(ymm13, ymm5);
+                ymm12 = _mm256_add_epi32(ymm12, ymm13);
+
+                ymm14 = _mm256_mullo_epi32(ymm14, ymm6); // row 7, 8
+                ymm15 = _mm256_mullo_epi32(ymm15, ymm7);
+                ymm14 = _mm256_add_epi32(ymm14, ymm15);
+
+                ymm8 = _mm256_add_epi32(ymm8, ymm10); // sum
+                ymm12 = _mm256_add_epi32(ymm12, ymm14);
+                ymm8 = _mm256_add_epi32(ymm8, ymm12);
+
+                // save current result
+                ymm21 = _mm256_add_epi32(ymm16, ymm8);
+
+                // ---------------------------------------------------------- //
+                // broadcast each elements from source 1
+                ymm8 = _mm256_set1_epi32(src1[(i + 6) * src1_w + k + 0]);
+                ymm9 = _mm256_set1_epi32(src1[(i + 6) * src1_w + k + 1]);
+                ymm10 = _mm256_set1_epi32(src1[(i + 6) * src1_w + k + 2]);
+                ymm11 = _mm256_set1_epi32(src1[(i + 6) * src1_w + k + 3]);
+                ymm12 = _mm256_set1_epi32(src1[(i + 6) * src1_w + k + 4]);
+                ymm13 = _mm256_set1_epi32(src1[(i + 6) * src1_w + k + 5]);
+                ymm14 = _mm256_set1_epi32(src1[(i + 6) * src1_w + k + 6]);
+                ymm15 = _mm256_set1_epi32(src1[(i + 6) * src1_w + k + 7]);
+
+                // multiply
+                ymm8 = _mm256_mullo_epi32(ymm8, ymm0); // row 1, 2
+                ymm9 = _mm256_mullo_epi32(ymm9, ymm1);
+                ymm8 = _mm256_add_epi32(ymm8, ymm9);
+
+                ymm10 = _mm256_mullo_epi32(ymm10, ymm2); // row 3, 4
+                ymm11 = _mm256_mullo_epi32(ymm11, ymm3);
+                ymm10 = _mm256_add_epi32(ymm10, ymm11);
+
+                ymm12 = _mm256_mullo_epi32(ymm12, ymm4); // row 5, 6
+                ymm13 = _mm256_mullo_epi32(ymm13, ymm5);
+                ymm12 = _mm256_add_epi32(ymm12, ymm13);
+
+                ymm14 = _mm256_mullo_epi32(ymm14, ymm6); // row 7, 8
+                ymm15 = _mm256_mullo_epi32(ymm15, ymm7);
+                ymm14 = _mm256_add_epi32(ymm14, ymm15);
+
+                ymm8 = _mm256_add_epi32(ymm8, ymm10); // sum
+                ymm12 = _mm256_add_epi32(ymm12, ymm14);
+                ymm8 = _mm256_add_epi32(ymm8, ymm12);
+
+                // save current result
+                ymm22 = _mm256_add_epi32(ymm16, ymm8);
+
+                // ---------------------------------------------------------- //
+                // broadcast each elements from source 1
+                ymm8 = _mm256_set1_epi32(src1[(i + 7) * src1_w + k + 0]);
+                ymm9 = _mm256_set1_epi32(src1[(i + 7) * src1_w + k + 1]);
+                ymm10 = _mm256_set1_epi32(src1[(i + 7) * src1_w + k + 2]);
+                ymm11 = _mm256_set1_epi32(src1[(i + 7) * src1_w + k + 3]);
+                ymm12 = _mm256_set1_epi32(src1[(i + 7) * src1_w + k + 4]);
+                ymm13 = _mm256_set1_epi32(src1[(i + 7) * src1_w + k + 5]);
+                ymm14 = _mm256_set1_epi32(src1[(i + 7) * src1_w + k + 6]);
+                ymm15 = _mm256_set1_epi32(src1[(i + 7) * src1_w + k + 7]);
+
+                // multiply
+                ymm8 = _mm256_mullo_epi32(ymm8, ymm0); // row 1, 2
+                ymm9 = _mm256_mullo_epi32(ymm9, ymm1);
+                ymm8 = _mm256_add_epi32(ymm8, ymm9);
+
+                ymm10 = _mm256_mullo_epi32(ymm10, ymm2); // row 3, 4
+                ymm11 = _mm256_mullo_epi32(ymm11, ymm3);
+                ymm10 = _mm256_add_epi32(ymm10, ymm11);
+
+                ymm12 = _mm256_mullo_epi32(ymm12, ymm4); // row 5, 6
+                ymm13 = _mm256_mullo_epi32(ymm13, ymm5);
+                ymm12 = _mm256_add_epi32(ymm12, ymm13);
+
+                ymm14 = _mm256_mullo_epi32(ymm14, ymm6); // row 7, 8
+                ymm15 = _mm256_mullo_epi32(ymm15, ymm7);
+                ymm14 = _mm256_add_epi32(ymm14, ymm15);
+
+                ymm8 = _mm256_add_epi32(ymm8, ymm10); // sum
+                ymm12 = _mm256_add_epi32(ymm12, ymm14);
+                ymm8 = _mm256_add_epi32(ymm8, ymm12);
+
+                // save current result
+                ymm23 = _mm256_add_epi32(ymm16, ymm8);
+            }
+
+            _mm256_storeu_si256((__m256i *) (dst + (i + 0) * src2_w + j), ymm16);
+            _mm256_storeu_si256((__m256i *) (dst + (i + 1) * src2_w + j), ymm17);
+            _mm256_storeu_si256((__m256i *) (dst + (i + 2) * src2_w + j), ymm18);
+            _mm256_storeu_si256((__m256i *) (dst + (i + 3) * src2_w + j), ymm19);
+            _mm256_storeu_si256((__m256i *) (dst + (i + 4) * src2_w + j), ymm20);
+            _mm256_storeu_si256((__m256i *) (dst + (i + 5) * src2_w + j), ymm21);
+            _mm256_storeu_si256((__m256i *) (dst + (i + 6) * src2_w + j), ymm22);
+            _mm256_storeu_si256((__m256i *) (dst + (i + 7) * src2_w + j), ymm23);
+        }
+    }
+}
+
+void avx_prefetch_multiply(int *src1, int *src2, int *dst, int src1_w,
+                           int src1_h, int src2_w, int src2_h)
+{
+    for (int i = 0; i < src1_h; i += 8) {
+        for (int j = 0; j < src2_w; j += 8) {
+            __m256i ymm0, ymm1, ymm2, ymm3, ymm4, ymm5, ymm6, ymm7,
+                    ymm8, ymm9, ymm10, ymm11, ymm12, ymm13, ymm14, ymm15;
+
+            __m256i ymm16 = _mm256_setzero_si256();
+            __m256i ymm17 = _mm256_setzero_si256();
+            __m256i ymm18 = _mm256_setzero_si256();
+            __m256i ymm19 = _mm256_setzero_si256();
+            __m256i ymm20 = _mm256_setzero_si256();
+            __m256i ymm21 = _mm256_setzero_si256();
+            __m256i ymm22 = _mm256_setzero_si256();
+            __m256i ymm23 = _mm256_setzero_si256();
+
+            for (int k = 0; k < src2_h; k += 8) {
+#define AVX_PFDIST  8
+                _mm_prefetch(src2 + (k + AVX_PFDIST + 0) * src2_w + j, _MM_HINT_T1);
+                _mm_prefetch(src2 + (k + AVX_PFDIST + 1) * src2_w + j, _MM_HINT_T1);
+                _mm_prefetch(src2 + (k + AVX_PFDIST + 2) * src2_w + j, _MM_HINT_T1);
+                _mm_prefetch(src2 + (k + AVX_PFDIST + 3) * src2_w + j, _MM_HINT_T1);
+                _mm_prefetch(src2 + (k + AVX_PFDIST + 4) * src2_w + j, _MM_HINT_T1);
+                _mm_prefetch(src2 + (k + AVX_PFDIST + 5) * src2_w + j, _MM_HINT_T1);
+                _mm_prefetch(src2 + (k + AVX_PFDIST + 6) * src2_w + j, _MM_HINT_T1);
+                _mm_prefetch(src2 + (k + AVX_PFDIST + 7) * src2_w + j, _MM_HINT_T1);
+
+                // load eight rows from source 2
+                ymm0 = _mm256_loadu_si256((__m256i *) (src2 + (k + 0) * src2_w + j));
+                ymm1 = _mm256_loadu_si256((__m256i *) (src2 + (k + 1) * src2_w + j));
+                ymm2 = _mm256_loadu_si256((__m256i *) (src2 + (k + 2) * src2_w + j));
+                ymm3 = _mm256_loadu_si256((__m256i *) (src2 + (k + 3) * src2_w + j));
+                ymm4 = _mm256_loadu_si256((__m256i *) (src2 + (k + 4) * src2_w + j));
+                ymm5 = _mm256_loadu_si256((__m256i *) (src2 + (k + 5) * src2_w + j));
+                ymm6 = _mm256_loadu_si256((__m256i *) (src2 + (k + 6) * src2_w + j));
+                ymm7 = _mm256_loadu_si256((__m256i *) (src2 + (k + 7) * src2_w + j));
+
+                // broadcast each elements from source 1
+                ymm8 = _mm256_set1_epi32(src1[(i + 0) * src1_w + k + 0]);
+                ymm9 = _mm256_set1_epi32(src1[(i + 0) * src1_w + k + 1]);
+                ymm10 = _mm256_set1_epi32(src1[(i + 0) * src1_w + k + 2]);
+                ymm11 = _mm256_set1_epi32(src1[(i + 0) * src1_w + k + 3]);
+                ymm12 = _mm256_set1_epi32(src1[(i + 0) * src1_w + k + 4]);
+                ymm13 = _mm256_set1_epi32(src1[(i + 0) * src1_w + k + 5]);
+                ymm14 = _mm256_set1_epi32(src1[(i + 0) * src1_w + k + 6]);
+                ymm15 = _mm256_set1_epi32(src1[(i + 0) * src1_w + k + 7]);
+
+                // multiply
+                ymm8 = _mm256_mullo_epi32(ymm8, ymm0); // row 1, 2
+                ymm9 = _mm256_mullo_epi32(ymm9, ymm1);
+                ymm8 = _mm256_add_epi32(ymm8, ymm9);
+
+                ymm10 = _mm256_mullo_epi32(ymm10, ymm2); // row 3, 4
+                ymm11 = _mm256_mullo_epi32(ymm11, ymm3);
+                ymm10 = _mm256_add_epi32(ymm10, ymm11);
+
+                ymm12 = _mm256_mullo_epi32(ymm12, ymm4); // row 5, 6
+                ymm13 = _mm256_mullo_epi32(ymm13, ymm5);
+                ymm12 = _mm256_add_epi32(ymm12, ymm13);
+
+                ymm14 = _mm256_mullo_epi32(ymm14, ymm6); // row 7, 8
+                ymm15 = _mm256_mullo_epi32(ymm15, ymm7);
+                ymm14 = _mm256_add_epi32(ymm14, ymm15);
+
+                ymm8 = _mm256_add_epi32(ymm8, ymm10); // sum
+                ymm12 = _mm256_add_epi32(ymm12, ymm14);
+                ymm8 = _mm256_add_epi32(ymm8, ymm12);
+
+                // save current result
+                ymm16 = _mm256_add_epi32(ymm16, ymm8);
+
+                // ---------------------------------------------------------- //
+                // broadcast each elements from source 1
+                ymm8 = _mm256_set1_epi32(src1[(i + 1) * src1_w + k + 0]);
+                ymm9 = _mm256_set1_epi32(src1[(i + 1) * src1_w + k + 1]);
+                ymm10 = _mm256_set1_epi32(src1[(i + 1) * src1_w + k + 2]);
+                ymm11 = _mm256_set1_epi32(src1[(i + 1) * src1_w + k + 3]);
+                ymm12 = _mm256_set1_epi32(src1[(i + 1) * src1_w + k + 4]);
+                ymm13 = _mm256_set1_epi32(src1[(i + 1) * src1_w + k + 5]);
+                ymm14 = _mm256_set1_epi32(src1[(i + 1) * src1_w + k + 6]);
+                ymm15 = _mm256_set1_epi32(src1[(i + 1) * src1_w + k + 7]);
+
+                // multiply
+                ymm8 = _mm256_mullo_epi32(ymm8, ymm0); // row 1, 2
+                ymm9 = _mm256_mullo_epi32(ymm9, ymm1);
+                ymm8 = _mm256_add_epi32(ymm8, ymm9);
+
+                ymm10 = _mm256_mullo_epi32(ymm10, ymm2); // row 3, 4
+                ymm11 = _mm256_mullo_epi32(ymm11, ymm3);
+                ymm10 = _mm256_add_epi32(ymm10, ymm11);
+
+                ymm12 = _mm256_mullo_epi32(ymm12, ymm4); // row 5, 6
+                ymm13 = _mm256_mullo_epi32(ymm13, ymm5);
+                ymm12 = _mm256_add_epi32(ymm12, ymm13);
+
+                ymm14 = _mm256_mullo_epi32(ymm14, ymm6); // row 7, 8
+                ymm15 = _mm256_mullo_epi32(ymm15, ymm7);
+                ymm14 = _mm256_add_epi32(ymm14, ymm15);
+
+                ymm8 = _mm256_add_epi32(ymm8, ymm10); // sum
+                ymm12 = _mm256_add_epi32(ymm12, ymm14);
+                ymm8 = _mm256_add_epi32(ymm8, ymm12);
+
+                // save current result
+                ymm17 = _mm256_add_epi32(ymm16, ymm8);
+
+                // ---------------------------------------------------------- //
+                // broadcast each elements from source 1
+                ymm8 = _mm256_set1_epi32(src1[(i + 2) * src1_w + k + 0]);
+                ymm9 = _mm256_set1_epi32(src1[(i + 2) * src1_w + k + 1]);
+                ymm10 = _mm256_set1_epi32(src1[(i + 2) * src1_w + k + 2]);
+                ymm11 = _mm256_set1_epi32(src1[(i + 2) * src1_w + k + 3]);
+                ymm12 = _mm256_set1_epi32(src1[(i + 2) * src1_w + k + 4]);
+                ymm13 = _mm256_set1_epi32(src1[(i + 2) * src1_w + k + 5]);
+                ymm14 = _mm256_set1_epi32(src1[(i + 2) * src1_w + k + 6]);
+                ymm15 = _mm256_set1_epi32(src1[(i + 2) * src1_w + k + 7]);
+
+                // multiply
+                ymm8 = _mm256_mullo_epi32(ymm8, ymm0); // row 1, 2
+                ymm9 = _mm256_mullo_epi32(ymm9, ymm1);
+                ymm8 = _mm256_add_epi32(ymm8, ymm9);
+
+                ymm10 = _mm256_mullo_epi32(ymm10, ymm2); // row 3, 4
+                ymm11 = _mm256_mullo_epi32(ymm11, ymm3);
+                ymm10 = _mm256_add_epi32(ymm10, ymm11);
+
+                ymm12 = _mm256_mullo_epi32(ymm12, ymm4); // row 5, 6
+                ymm13 = _mm256_mullo_epi32(ymm13, ymm5);
+                ymm12 = _mm256_add_epi32(ymm12, ymm13);
+
+                ymm14 = _mm256_mullo_epi32(ymm14, ymm6); // row 7, 8
+                ymm15 = _mm256_mullo_epi32(ymm15, ymm7);
+                ymm14 = _mm256_add_epi32(ymm14, ymm15);
+
+                ymm8 = _mm256_add_epi32(ymm8, ymm10); // sum
+                ymm12 = _mm256_add_epi32(ymm12, ymm14);
+                ymm8 = _mm256_add_epi32(ymm8, ymm12);
+
+                // save current result
+                ymm18 = _mm256_add_epi32(ymm16, ymm8);
+
+                // ---------------------------------------------------------- //
+                // broadcast each elements from source 1
+                ymm8 = _mm256_set1_epi32(src1[(i + 3) * src1_w + k + 0]);
+                ymm9 = _mm256_set1_epi32(src1[(i + 3) * src1_w + k + 1]);
+                ymm10 = _mm256_set1_epi32(src1[(i + 3) * src1_w + k + 2]);
+                ymm11 = _mm256_set1_epi32(src1[(i + 3) * src1_w + k + 3]);
+                ymm12 = _mm256_set1_epi32(src1[(i + 3) * src1_w + k + 4]);
+                ymm13 = _mm256_set1_epi32(src1[(i + 3) * src1_w + k + 5]);
+                ymm14 = _mm256_set1_epi32(src1[(i + 3) * src1_w + k + 6]);
+                ymm15 = _mm256_set1_epi32(src1[(i + 3) * src1_w + k + 7]);
+
+                // multiply
+                ymm8 = _mm256_mullo_epi32(ymm8, ymm0); // row 1, 2
+                ymm9 = _mm256_mullo_epi32(ymm9, ymm1);
+                ymm8 = _mm256_add_epi32(ymm8, ymm9);
+
+                ymm10 = _mm256_mullo_epi32(ymm10, ymm2); // row 3, 4
+                ymm11 = _mm256_mullo_epi32(ymm11, ymm3);
+                ymm10 = _mm256_add_epi32(ymm10, ymm11);
+
+                ymm12 = _mm256_mullo_epi32(ymm12, ymm4); // row 5, 6
+                ymm13 = _mm256_mullo_epi32(ymm13, ymm5);
+                ymm12 = _mm256_add_epi32(ymm12, ymm13);
+
+                ymm14 = _mm256_mullo_epi32(ymm14, ymm6); // row 7, 8
+                ymm15 = _mm256_mullo_epi32(ymm15, ymm7);
+                ymm14 = _mm256_add_epi32(ymm14, ymm15);
+
+                ymm8 = _mm256_add_epi32(ymm8, ymm10); // sum
+                ymm12 = _mm256_add_epi32(ymm12, ymm14);
+                ymm8 = _mm256_add_epi32(ymm8, ymm12);
+
+                // save current result
+                ymm19 = _mm256_add_epi32(ymm16, ymm8);
+
+                // ---------------------------------------------------------- //
+                // broadcast each elements from source 1
+                ymm8 = _mm256_set1_epi32(src1[(i + 4) * src1_w + k + 0]);
+                ymm9 = _mm256_set1_epi32(src1[(i + 4) * src1_w + k + 1]);
+                ymm10 = _mm256_set1_epi32(src1[(i + 4) * src1_w + k + 2]);
+                ymm11 = _mm256_set1_epi32(src1[(i + 4) * src1_w + k + 3]);
+                ymm12 = _mm256_set1_epi32(src1[(i + 4) * src1_w + k + 4]);
+                ymm13 = _mm256_set1_epi32(src1[(i + 4) * src1_w + k + 5]);
+                ymm14 = _mm256_set1_epi32(src1[(i + 4) * src1_w + k + 6]);
+                ymm15 = _mm256_set1_epi32(src1[(i + 4) * src1_w + k + 7]);
+
+                // multiply
+                ymm8 = _mm256_mullo_epi32(ymm8, ymm0); // row 1, 2
+                ymm9 = _mm256_mullo_epi32(ymm9, ymm1);
+                ymm8 = _mm256_add_epi32(ymm8, ymm9);
+
+                ymm10 = _mm256_mullo_epi32(ymm10, ymm2); // row 3, 4
+                ymm11 = _mm256_mullo_epi32(ymm11, ymm3);
+                ymm10 = _mm256_add_epi32(ymm10, ymm11);
+
+                ymm12 = _mm256_mullo_epi32(ymm12, ymm4); // row 5, 6
+                ymm13 = _mm256_mullo_epi32(ymm13, ymm5);
+                ymm12 = _mm256_add_epi32(ymm12, ymm13);
+
+                ymm14 = _mm256_mullo_epi32(ymm14, ymm6); // row 7, 8
+                ymm15 = _mm256_mullo_epi32(ymm15, ymm7);
+                ymm14 = _mm256_add_epi32(ymm14, ymm15);
+
+                ymm8 = _mm256_add_epi32(ymm8, ymm10); // sum
+                ymm12 = _mm256_add_epi32(ymm12, ymm14);
+                ymm8 = _mm256_add_epi32(ymm8, ymm12);
+
+                // save current result
+                ymm20 = _mm256_add_epi32(ymm16, ymm8);
+
+                // ---------------------------------------------------------- //
+                // broadcast each elements from source 1
+                ymm8 = _mm256_set1_epi32(src1[(i + 5) * src1_w + k + 0]);
+                ymm9 = _mm256_set1_epi32(src1[(i + 5) * src1_w + k + 1]);
+                ymm10 = _mm256_set1_epi32(src1[(i + 5) * src1_w + k + 2]);
+                ymm11 = _mm256_set1_epi32(src1[(i + 5) * src1_w + k + 3]);
+                ymm12 = _mm256_set1_epi32(src1[(i + 5) * src1_w + k + 4]);
+                ymm13 = _mm256_set1_epi32(src1[(i + 5) * src1_w + k + 5]);
+                ymm14 = _mm256_set1_epi32(src1[(i + 5) * src1_w + k + 6]);
+                ymm15 = _mm256_set1_epi32(src1[(i + 5) * src1_w + k + 7]);
+
+                // multiply
+                ymm8 = _mm256_mullo_epi32(ymm8, ymm0); // row 1, 2
+                ymm9 = _mm256_mullo_epi32(ymm9, ymm1);
+                ymm8 = _mm256_add_epi32(ymm8, ymm9);
+
+                ymm10 = _mm256_mullo_epi32(ymm10, ymm2); // row 3, 4
+                ymm11 = _mm256_mullo_epi32(ymm11, ymm3);
+                ymm10 = _mm256_add_epi32(ymm10, ymm11);
+
+                ymm12 = _mm256_mullo_epi32(ymm12, ymm4); // row 5, 6
+                ymm13 = _mm256_mullo_epi32(ymm13, ymm5);
+                ymm12 = _mm256_add_epi32(ymm12, ymm13);
+
+                ymm14 = _mm256_mullo_epi32(ymm14, ymm6); // row 7, 8
+                ymm15 = _mm256_mullo_epi32(ymm15, ymm7);
+                ymm14 = _mm256_add_epi32(ymm14, ymm15);
+
+                ymm8 = _mm256_add_epi32(ymm8, ymm10); // sum
+                ymm12 = _mm256_add_epi32(ymm12, ymm14);
+                ymm8 = _mm256_add_epi32(ymm8, ymm12);
+
+                // save current result
+                ymm21 = _mm256_add_epi32(ymm16, ymm8);
+
+                // ---------------------------------------------------------- //
+                // broadcast each elements from source 1
+                ymm8 = _mm256_set1_epi32(src1[(i + 6) * src1_w + k + 0]);
+                ymm9 = _mm256_set1_epi32(src1[(i + 6) * src1_w + k + 1]);
+                ymm10 = _mm256_set1_epi32(src1[(i + 6) * src1_w + k + 2]);
+                ymm11 = _mm256_set1_epi32(src1[(i + 6) * src1_w + k + 3]);
+                ymm12 = _mm256_set1_epi32(src1[(i + 6) * src1_w + k + 4]);
+                ymm13 = _mm256_set1_epi32(src1[(i + 6) * src1_w + k + 5]);
+                ymm14 = _mm256_set1_epi32(src1[(i + 6) * src1_w + k + 6]);
+                ymm15 = _mm256_set1_epi32(src1[(i + 6) * src1_w + k + 7]);
+
+                // multiply
+                ymm8 = _mm256_mullo_epi32(ymm8, ymm0); // row 1, 2
+                ymm9 = _mm256_mullo_epi32(ymm9, ymm1);
+                ymm8 = _mm256_add_epi32(ymm8, ymm9);
+
+                ymm10 = _mm256_mullo_epi32(ymm10, ymm2); // row 3, 4
+                ymm11 = _mm256_mullo_epi32(ymm11, ymm3);
+                ymm10 = _mm256_add_epi32(ymm10, ymm11);
+
+                ymm12 = _mm256_mullo_epi32(ymm12, ymm4); // row 5, 6
+                ymm13 = _mm256_mullo_epi32(ymm13, ymm5);
+                ymm12 = _mm256_add_epi32(ymm12, ymm13);
+
+                ymm14 = _mm256_mullo_epi32(ymm14, ymm6); // row 7, 8
+                ymm15 = _mm256_mullo_epi32(ymm15, ymm7);
+                ymm14 = _mm256_add_epi32(ymm14, ymm15);
+
+                ymm8 = _mm256_add_epi32(ymm8, ymm10); // sum
+                ymm12 = _mm256_add_epi32(ymm12, ymm14);
+                ymm8 = _mm256_add_epi32(ymm8, ymm12);
+
+                // save current result
+                ymm22 = _mm256_add_epi32(ymm16, ymm8);
+
+                // ---------------------------------------------------------- //
+                // broadcast each elements from source 1
+                ymm8 = _mm256_set1_epi32(src1[(i + 7) * src1_w + k + 0]);
+                ymm9 = _mm256_set1_epi32(src1[(i + 7) * src1_w + k + 1]);
+                ymm10 = _mm256_set1_epi32(src1[(i + 7) * src1_w + k + 2]);
+                ymm11 = _mm256_set1_epi32(src1[(i + 7) * src1_w + k + 3]);
+                ymm12 = _mm256_set1_epi32(src1[(i + 7) * src1_w + k + 4]);
+                ymm13 = _mm256_set1_epi32(src1[(i + 7) * src1_w + k + 5]);
+                ymm14 = _mm256_set1_epi32(src1[(i + 7) * src1_w + k + 6]);
+                ymm15 = _mm256_set1_epi32(src1[(i + 7) * src1_w + k + 7]);
+
+                // multiply
+                ymm8 = _mm256_mullo_epi32(ymm8, ymm0); // row 1, 2
+                ymm9 = _mm256_mullo_epi32(ymm9, ymm1);
+                ymm8 = _mm256_add_epi32(ymm8, ymm9);
+
+                ymm10 = _mm256_mullo_epi32(ymm10, ymm2); // row 3, 4
+                ymm11 = _mm256_mullo_epi32(ymm11, ymm3);
+                ymm10 = _mm256_add_epi32(ymm10, ymm11);
+
+                ymm12 = _mm256_mullo_epi32(ymm12, ymm4); // row 5, 6
+                ymm13 = _mm256_mullo_epi32(ymm13, ymm5);
+                ymm12 = _mm256_add_epi32(ymm12, ymm13);
+
+                ymm14 = _mm256_mullo_epi32(ymm14, ymm6); // row 7, 8
+                ymm15 = _mm256_mullo_epi32(ymm15, ymm7);
+                ymm14 = _mm256_add_epi32(ymm14, ymm15);
+
+                ymm8 = _mm256_add_epi32(ymm8, ymm10); // sum
+                ymm12 = _mm256_add_epi32(ymm12, ymm14);
+                ymm8 = _mm256_add_epi32(ymm8, ymm12);
+
+                // save current result
+                ymm23 = _mm256_add_epi32(ymm16, ymm8);
+            }
+
+            _mm256_storeu_si256((__m256i *) (dst + (i + 0) * src2_w + j), ymm16);
+            _mm256_storeu_si256((__m256i *) (dst + (i + 1) * src2_w + j), ymm17);
+            _mm256_storeu_si256((__m256i *) (dst + (i + 2) * src2_w + j), ymm18);
+            _mm256_storeu_si256((__m256i *) (dst + (i + 3) * src2_w + j), ymm19);
+            _mm256_storeu_si256((__m256i *) (dst + (i + 4) * src2_w + j), ymm20);
+            _mm256_storeu_si256((__m256i *) (dst + (i + 5) * src2_w + j), ymm21);
+            _mm256_storeu_si256((__m256i *) (dst + (i + 6) * src2_w + j), ymm22);
+            _mm256_storeu_si256((__m256i *) (dst + (i + 7) * src2_w + j), ymm23);
         }
     }
 }

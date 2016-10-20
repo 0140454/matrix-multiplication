@@ -9,3 +9,5 @@ naive
 submatrix
 sse
 sse_prefetch
+avx
+avx_prefetch
