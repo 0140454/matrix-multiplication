@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
         clock_gettime(CLOCK_REALTIME, &start);
         sse_multiply(src1, src2, out3, TEST_W, TEST_H, TEST_W, TEST_H);
         clock_gettime(CLOCK_REALTIME, &end);
-        printf("sse: \t %ld us\n", diff_in_us(start, end));
+        printf("sse: \t\t %ld us\n", diff_in_us(start, end));
 #endif
 
 #if defined(sse_prefetch)
