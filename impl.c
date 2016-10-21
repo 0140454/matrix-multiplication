@@ -39,7 +39,7 @@ void submatrix_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
 void sse_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
                   int src2_w, int src2_h)
 {
-    for (int x = 0; x < src1_w; x += 4) {
+    for (int x = 0; x < src1_h; x += 4) {
         for (int y = 0; y < src2_w; y += 4) {
             __m128i des0 = _mm_setzero_si128 ();
             __m128i des1 = _mm_setzero_si128 ();
@@ -160,7 +160,7 @@ void sse_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
 void sse_prefetch_multiply(int *src1, int *src2, int *dst, int src1_w,
                            int src1_h, int src2_w, int src2_h)
 {
-    for (int x = 0; x < src1_w; x += 4) {
+    for (int x = 0; x < src1_h; x += 4) {
         for (int y = 0; y < src2_w; y += 4) {
             __m128i des0 = _mm_setzero_si128 ();
             __m128i des1 = _mm_setzero_si128 ();
@@ -379,7 +379,7 @@ void avx_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
                 ymm8 = _mm256_add_epi32(ymm8, ymm12);
 
                 // save current result
-                ymm17 = _mm256_add_epi32(ymm16, ymm8);
+                ymm17 = _mm256_add_epi32(ymm17, ymm8);
 
                 // ---------------------------------------------------------- //
                 // broadcast each elements from source 1
@@ -414,7 +414,7 @@ void avx_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
                 ymm8 = _mm256_add_epi32(ymm8, ymm12);
 
                 // save current result
-                ymm18 = _mm256_add_epi32(ymm16, ymm8);
+                ymm18 = _mm256_add_epi32(ymm18, ymm8);
 
                 // ---------------------------------------------------------- //
                 // broadcast each elements from source 1
@@ -449,7 +449,7 @@ void avx_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
                 ymm8 = _mm256_add_epi32(ymm8, ymm12);
 
                 // save current result
-                ymm19 = _mm256_add_epi32(ymm16, ymm8);
+                ymm19 = _mm256_add_epi32(ymm19, ymm8);
 
                 // ---------------------------------------------------------- //
                 // broadcast each elements from source 1
@@ -484,7 +484,7 @@ void avx_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
                 ymm8 = _mm256_add_epi32(ymm8, ymm12);
 
                 // save current result
-                ymm20 = _mm256_add_epi32(ymm16, ymm8);
+                ymm20 = _mm256_add_epi32(ymm20, ymm8);
 
                 // ---------------------------------------------------------- //
                 // broadcast each elements from source 1
@@ -519,7 +519,7 @@ void avx_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
                 ymm8 = _mm256_add_epi32(ymm8, ymm12);
 
                 // save current result
-                ymm21 = _mm256_add_epi32(ymm16, ymm8);
+                ymm21 = _mm256_add_epi32(ymm21, ymm8);
 
                 // ---------------------------------------------------------- //
                 // broadcast each elements from source 1
@@ -554,7 +554,7 @@ void avx_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
                 ymm8 = _mm256_add_epi32(ymm8, ymm12);
 
                 // save current result
-                ymm22 = _mm256_add_epi32(ymm16, ymm8);
+                ymm22 = _mm256_add_epi32(ymm22, ymm8);
 
                 // ---------------------------------------------------------- //
                 // broadcast each elements from source 1
@@ -589,7 +589,7 @@ void avx_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
                 ymm8 = _mm256_add_epi32(ymm8, ymm12);
 
                 // save current result
-                ymm23 = _mm256_add_epi32(ymm16, ymm8);
+                ymm23 = _mm256_add_epi32(ymm23, ymm8);
             }
 
             _mm256_storeu_si256((__m256i *) (dst + (i + 0) * src2_w + j), ymm16);
@@ -709,7 +709,7 @@ void avx_prefetch_multiply(int *src1, int *src2, int *dst, int src1_w,
                 ymm8 = _mm256_add_epi32(ymm8, ymm12);
 
                 // save current result
-                ymm17 = _mm256_add_epi32(ymm16, ymm8);
+                ymm17 = _mm256_add_epi32(ymm17, ymm8);
 
                 // ---------------------------------------------------------- //
                 // broadcast each elements from source 1
@@ -744,7 +744,7 @@ void avx_prefetch_multiply(int *src1, int *src2, int *dst, int src1_w,
                 ymm8 = _mm256_add_epi32(ymm8, ymm12);
 
                 // save current result
-                ymm18 = _mm256_add_epi32(ymm16, ymm8);
+                ymm18 = _mm256_add_epi32(ymm18, ymm8);
 
                 // ---------------------------------------------------------- //
                 // broadcast each elements from source 1
@@ -779,7 +779,7 @@ void avx_prefetch_multiply(int *src1, int *src2, int *dst, int src1_w,
                 ymm8 = _mm256_add_epi32(ymm8, ymm12);
 
                 // save current result
-                ymm19 = _mm256_add_epi32(ymm16, ymm8);
+                ymm19 = _mm256_add_epi32(ymm19, ymm8);
 
                 // ---------------------------------------------------------- //
                 // broadcast each elements from source 1
@@ -814,7 +814,7 @@ void avx_prefetch_multiply(int *src1, int *src2, int *dst, int src1_w,
                 ymm8 = _mm256_add_epi32(ymm8, ymm12);
 
                 // save current result
-                ymm20 = _mm256_add_epi32(ymm16, ymm8);
+                ymm20 = _mm256_add_epi32(ymm20, ymm8);
 
                 // ---------------------------------------------------------- //
                 // broadcast each elements from source 1
@@ -849,7 +849,7 @@ void avx_prefetch_multiply(int *src1, int *src2, int *dst, int src1_w,
                 ymm8 = _mm256_add_epi32(ymm8, ymm12);
 
                 // save current result
-                ymm21 = _mm256_add_epi32(ymm16, ymm8);
+                ymm21 = _mm256_add_epi32(ymm21, ymm8);
 
                 // ---------------------------------------------------------- //
                 // broadcast each elements from source 1
@@ -884,7 +884,7 @@ void avx_prefetch_multiply(int *src1, int *src2, int *dst, int src1_w,
                 ymm8 = _mm256_add_epi32(ymm8, ymm12);
 
                 // save current result
-                ymm22 = _mm256_add_epi32(ymm16, ymm8);
+                ymm22 = _mm256_add_epi32(ymm22, ymm8);
 
                 // ---------------------------------------------------------- //
                 // broadcast each elements from source 1
@@ -919,7 +919,7 @@ void avx_prefetch_multiply(int *src1, int *src2, int *dst, int src1_w,
                 ymm8 = _mm256_add_epi32(ymm8, ymm12);
 
                 // save current result
-                ymm23 = _mm256_add_epi32(ymm16, ymm8);
+                ymm23 = _mm256_add_epi32(ymm23, ymm8);
             }
 
             _mm256_storeu_si256((__m256i *) (dst + (i + 0) * src2_w + j), ymm16);
