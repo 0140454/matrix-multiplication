@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
         clock_gettime(CLOCK_REALTIME, &start);
         avx_prefetch_multiply(src1, src2, out6, TEST_W, TEST_H, TEST_W, TEST_H);
         clock_gettime(CLOCK_REALTIME, &end);
-        printf("sse_prefetch: \t %ld us\n", diff_in_us(start, end));
+        printf("avx_prefetch: \t %ld us\n", diff_in_us(start, end));
 #endif
 
         free(src1);
