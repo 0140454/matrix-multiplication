@@ -169,10 +169,10 @@ void sse_prefetch_multiply(int *src1, int *src2, int *dst, int src1_w,
 
             for (int k = 0; k < src2_w; k += 4) {
 #define SSE_PFDIST  8
-                _mm_prefetch(src1 + (k + SSE_PFDIST + 0) * src1_w + y, _MM_HINT_T1);
-                _mm_prefetch(src1 + (k + SSE_PFDIST + 1) * src1_w + k, _MM_HINT_T1);
-                _mm_prefetch(src1 + (k + SSE_PFDIST + 2) * src1_w + k, _MM_HINT_T1);
-                _mm_prefetch(src1 + (k + SSE_PFDIST + 3) * src1_w + k, _MM_HINT_T1);
+                _mm_prefetch(src2 + (k + SSE_PFDIST + 0) * src2_w + y, _MM_HINT_T1);
+                _mm_prefetch(src2 + (k + SSE_PFDIST + 1) * src2_w + y, _MM_HINT_T1);
+                _mm_prefetch(src2 + (k + SSE_PFDIST + 2) * src2_w + y, _MM_HINT_T1);
+                _mm_prefetch(src2 + (k + SSE_PFDIST + 3) * src2_w + y, _MM_HINT_T1);
 
                 __m128i I0 = _mm_loadu_si128((__m128i *)(src1 + (x + 0) * src1_w + k));
                 __m128i I1 = _mm_loadu_si128((__m128i *)(src1 + (x + 1) * src1_w + k));
