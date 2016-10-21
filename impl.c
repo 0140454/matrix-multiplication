@@ -41,118 +41,112 @@ void sse_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
 {
     for (int x = 0; x < src1_h; x += 4) {
         for (int y = 0; y < src2_w; y += 4) {
-            __m128i des0 = _mm_setzero_si128 ();
-            __m128i des1 = _mm_setzero_si128 ();
-            __m128i des2 = _mm_setzero_si128 ();
-            __m128i des3 = _mm_setzero_si128 ();
+            __m128i xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+
+            __m128i xmm9 = _mm_setzero_si128 ();
+            __m128i xmm10 = _mm_setzero_si128 ();
+            __m128i xmm11 = _mm_setzero_si128 ();
+            __m128i xmm12 = _mm_setzero_si128 ();
 
             for (int k = 0; k < src2_w; k += 4) {
-                __m128i I0 = _mm_loadu_si128((__m128i *)(src1 + (x + 0) * src1_w + k));
-                __m128i I1 = _mm_loadu_si128((__m128i *)(src1 + (x + 1) * src1_w + k));
-                __m128i I2 = _mm_loadu_si128((__m128i *)(src1 + (x + 2) * src1_w + k));
-                __m128i I3 = _mm_loadu_si128((__m128i *)(src1 + (x + 3) * src1_w + k));
+                // load eight rows from source 2
+                xmm0 = _mm_loadu_si128((__m128i *) (src2 + (k + 0) * src2_w + y));
+                xmm1 = _mm_loadu_si128((__m128i *) (src2 + (k + 1) * src2_w + y));
+                xmm2 = _mm_loadu_si128((__m128i *) (src2 + (k + 2) * src2_w + y));
+                xmm3 = _mm_loadu_si128((__m128i *) (src2 + (k + 3) * src2_w + y));
 
-                __m128i I4 = _mm_set_epi32 (src2[(k+3) * src2_w + y], src2[(k+2) * src2_w + y],
-                                            src2[(k+1) * src2_w + y], src2[k * src2_w + y]);
-                __m128i I5 = _mm_set_epi32 (src2[(k+3) * src2_w + (y+1)],
-                                            src2[(k+2) * src2_w + (y+1)], src2[(k+1) * src2_w + (y+1)],
-                                            src2[(k+0) * src2_w + (y+1)]);
-                __m128i I6 = _mm_set_epi32 (src2[(k+3) * src2_w + (y+2)],
-                                            src2[(k+2) * src2_w + (y+2)], src2[(k+1) * src2_w + (y+2)],
-                                            src2[(k+0) * src2_w + (y+2)]);
-                __m128i I7 = _mm_set_epi32 (src2[(k+3) * src2_w + (y+3)],
-                                            src2[(k+2) * src2_w + (y+3)], src2[(k+1) * src2_w + (y+3)],
-                                            src2[(k+0) * src2_w + (y+3)]);
+                // broadcast each elements from source 1
+                xmm4 = _mm_loadu_si128((__m128i *) (src1 + (x + 0) * src1_w + k));
+                xmm5 = _mm_shuffle_epi32(xmm4, 0x00);
+                xmm6 = _mm_shuffle_epi32(xmm4, 0x55);
+                xmm7 = _mm_shuffle_epi32(xmm4, 0xAA);
+                xmm8 = _mm_shuffle_epi32(xmm4, 0xFF);
 
-                __m128i T0 = _mm_mullo_epi32(I0, I4);
-                __m128i T1 = _mm_mullo_epi32(I0, I5);
-                __m128i T2 = _mm_mullo_epi32(I0, I6);
-                __m128i T3 = _mm_mullo_epi32(I0, I7);
+                // multiply
+                xmm5 = _mm_mullo_epi32(xmm5, xmm0); // row 1, 2
+                xmm6 = _mm_mullo_epi32(xmm6, xmm1);
+                xmm5 = _mm_add_epi32(xmm5, xmm6);
 
-                __m128i T4 = _mm_mullo_epi32(I1, I4);
-                __m128i T5 = _mm_mullo_epi32(I1, I5);
-                __m128i T6 = _mm_mullo_epi32(I1, I6);
-                __m128i T7 = _mm_mullo_epi32(I1, I7);
+                xmm7 = _mm_mullo_epi32(xmm7, xmm2); // row 3, 4
+                xmm8 = _mm_mullo_epi32(xmm8, xmm3);
+                xmm7 = _mm_add_epi32(xmm7, xmm8);
 
-                __m128i T8 = _mm_mullo_epi32(I2, I4);
-                __m128i T9 = _mm_mullo_epi32(I2, I5);
-                __m128i T10 = _mm_mullo_epi32(I2, I6);
-                __m128i T11 = _mm_mullo_epi32(I2, I7);
+                xmm5 = _mm_add_epi32(xmm5, xmm7); //sum
 
-                __m128i T12 = _mm_mullo_epi32(I3, I4);
-                __m128i T13 = _mm_mullo_epi32(I3, I5);
-                __m128i T14 = _mm_mullo_epi32(I3, I6);
-                __m128i T15 = _mm_mullo_epi32(I3, I7);
+                // save current result
+                xmm9 = _mm_add_epi32(xmm9, xmm5);
 
-                __m128i T16 = _mm_unpacklo_epi32(T0, T1);
-                __m128i T17 = _mm_unpacklo_epi32(T2, T3);
-                __m128i T18 = _mm_unpackhi_epi32(T0, T1);
-                __m128i T19 = _mm_unpackhi_epi32(T2, T3);
+                //------------------------------------------------------------//
+                // broadcast each elements from source 1
+                xmm4 = _mm_loadu_si128((__m128i *) (src1 + (x + 1) * src1_w + k));
+                xmm5 = _mm_shuffle_epi32(xmm4, 0x00);
+                xmm6 = _mm_shuffle_epi32(xmm4, 0x55);
+                xmm7 = _mm_shuffle_epi32(xmm4, 0xAA);
+                xmm8 = _mm_shuffle_epi32(xmm4, 0xFF);
 
-                __m128i T20 = _mm_unpacklo_epi64(T16, T17);
-                __m128i T21 = _mm_unpackhi_epi64(T16, T17);
-                __m128i T22 = _mm_unpacklo_epi64(T18, T19);
-                __m128i T23 = _mm_unpackhi_epi64(T18, T19);
+                // multiply
+                xmm5 = _mm_mullo_epi32(xmm5, xmm0); // row 1, 2
+                xmm6 = _mm_mullo_epi32(xmm6, xmm1);
+                xmm5 = _mm_add_epi32(xmm5, xmm6);
 
-                T20 = _mm_add_epi32(T20, T21);
-                T20 = _mm_add_epi32(T20, T22);
-                T20 = _mm_add_epi32(T20, T23);
+                xmm7 = _mm_mullo_epi32(xmm7, xmm2); // row 3, 4
+                xmm8 = _mm_mullo_epi32(xmm8, xmm3);
+                xmm7 = _mm_add_epi32(xmm7, xmm8);
 
-                des0 = _mm_add_epi32(T20, des0);
+                xmm5 = _mm_add_epi32(xmm5, xmm7); //sum
 
-                T16 = _mm_unpacklo_epi32(T4, T5);
-                T17 = _mm_unpacklo_epi32(T6, T7);
-                T18 = _mm_unpackhi_epi32(T4, T5);
-                T19 = _mm_unpackhi_epi32(T6, T7);
+                // save current result
+                xmm10 = _mm_add_epi32(xmm10, xmm5);
 
-                T20 = _mm_unpacklo_epi64(T16, T17);
-                T21 = _mm_unpackhi_epi64(T16, T17);
-                T22 = _mm_unpacklo_epi64(T18, T19);
-                T23 = _mm_unpackhi_epi64(T18, T19);
+                //------------------------------------------------------------//
+                // broadcast each elements from source 1
+                xmm4 = _mm_loadu_si128((__m128i *) (src1 + (x + 2) * src1_w + k));
+                xmm5 = _mm_shuffle_epi32(xmm4, 0x00);
+                xmm6 = _mm_shuffle_epi32(xmm4, 0x55);
+                xmm7 = _mm_shuffle_epi32(xmm4, 0xAA);
+                xmm8 = _mm_shuffle_epi32(xmm4, 0xFF);
 
-                T20 = _mm_add_epi32(T20, T21);
-                T20 = _mm_add_epi32(T20, T22);
-                T20 = _mm_add_epi32(T20, T23);
+                // multiply
+                xmm5 = _mm_mullo_epi32(xmm5, xmm0); // row 1, 2
+                xmm6 = _mm_mullo_epi32(xmm6, xmm1);
+                xmm5 = _mm_add_epi32(xmm5, xmm6);
 
-                des1 = _mm_add_epi32(T20, des1);
+                xmm7 = _mm_mullo_epi32(xmm7, xmm2); // row 3, 4
+                xmm8 = _mm_mullo_epi32(xmm8, xmm3);
+                xmm7 = _mm_add_epi32(xmm7, xmm8);
 
-                T16 = _mm_unpacklo_epi32(T8, T9);
-                T17 = _mm_unpacklo_epi32(T10, T11);
-                T18 = _mm_unpackhi_epi32(T8, T9);
-                T19 = _mm_unpackhi_epi32(T10, T11);
+                xmm5 = _mm_add_epi32(xmm5, xmm7); //sum
 
-                T20 = _mm_unpacklo_epi64(T16, T17);
-                T21 = _mm_unpackhi_epi64(T16, T17);
-                T22 = _mm_unpacklo_epi64(T18, T19);
-                T23 = _mm_unpackhi_epi64(T18, T19);
+                // save current result
+                xmm11 = _mm_add_epi32(xmm11, xmm5);
 
-                T20 = _mm_add_epi32(T20, T21);
-                T20 = _mm_add_epi32(T20, T22);
-                T20 = _mm_add_epi32(T20, T23);
+                //------------------------------------------------------------//
+                // broadcast each elements from source 1
+                xmm4 = _mm_loadu_si128((__m128i *) (src1 + (x + 3) * src1_w + k));
+                xmm5 = _mm_shuffle_epi32(xmm4, 0x00);
+                xmm6 = _mm_shuffle_epi32(xmm4, 0x55);
+                xmm7 = _mm_shuffle_epi32(xmm4, 0xAA);
+                xmm8 = _mm_shuffle_epi32(xmm4, 0xFF);
 
-                des2 = _mm_add_epi32(T20, des2);
+                // multiply
+                xmm5 = _mm_mullo_epi32(xmm5, xmm0); // row 1, 2
+                xmm6 = _mm_mullo_epi32(xmm6, xmm1);
+                xmm5 = _mm_add_epi32(xmm5, xmm6);
 
-                T16 = _mm_unpacklo_epi32(T12, T13);
-                T17 = _mm_unpacklo_epi32(T14, T15);
-                T18 = _mm_unpackhi_epi32(T12, T13);
-                T19 = _mm_unpackhi_epi32(T14, T15);
+                xmm7 = _mm_mullo_epi32(xmm7, xmm2); // row 3, 4
+                xmm8 = _mm_mullo_epi32(xmm8, xmm3);
+                xmm7 = _mm_add_epi32(xmm7, xmm8);
 
-                T20 = _mm_unpacklo_epi64(T16, T17);
-                T21 = _mm_unpackhi_epi64(T16, T17);
-                T22 = _mm_unpacklo_epi64(T18, T19);
-                T23 = _mm_unpackhi_epi64(T18, T19);
+                xmm5 = _mm_add_epi32(xmm5, xmm7); //sum
 
-                T20 = _mm_add_epi32(T20, T21);
-                T20 = _mm_add_epi32(T20, T22);
-                T20 = _mm_add_epi32(T20, T23);
-
-                des3 = _mm_add_epi32(T20, des3);
+                // save current result
+                xmm12 = _mm_add_epi32(xmm12, xmm5);
             }
 
-            _mm_storeu_si128((__m128i *)(dst + ((x + 0) * src2_w) + y), des0);
-            _mm_storeu_si128((__m128i *)(dst + ((x + 1) * src2_w) + y), des1);
-            _mm_storeu_si128((__m128i *)(dst + ((x + 2) * src2_w) + y), des2);
-            _mm_storeu_si128((__m128i *)(dst + ((x + 3) * src2_w) + y), des3);
+            _mm_storeu_si128((__m128i *)(dst + ((x + 0) * src2_w) + y), xmm9);
+            _mm_storeu_si128((__m128i *)(dst + ((x + 1) * src2_w) + y), xmm10);
+            _mm_storeu_si128((__m128i *)(dst + ((x + 2) * src2_w) + y), xmm11);
+            _mm_storeu_si128((__m128i *)(dst + ((x + 3) * src2_w) + y), xmm12);
         }
     }
 }
@@ -162,124 +156,118 @@ void sse_prefetch_multiply(int *src1, int *src2, int *dst, int src1_w,
 {
     for (int x = 0; x < src1_h; x += 4) {
         for (int y = 0; y < src2_w; y += 4) {
-            __m128i des0 = _mm_setzero_si128 ();
-            __m128i des1 = _mm_setzero_si128 ();
-            __m128i des2 = _mm_setzero_si128 ();
-            __m128i des3 = _mm_setzero_si128 ();
+            __m128i xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8;
+
+            __m128i xmm9 = _mm_setzero_si128 ();
+            __m128i xmm10 = _mm_setzero_si128 ();
+            __m128i xmm11 = _mm_setzero_si128 ();
+            __m128i xmm12 = _mm_setzero_si128 ();
 
             for (int k = 0; k < src2_w; k += 4) {
 #define SSE_PFDIST  8
-                _mm_prefetch(src1 + (k + SSE_PFDIST + 0) * src1_w + y, _MM_HINT_T1);
-                _mm_prefetch(src1 + (k + SSE_PFDIST + 1) * src1_w + k, _MM_HINT_T1);
-                _mm_prefetch(src1 + (k + SSE_PFDIST + 2) * src1_w + k, _MM_HINT_T1);
-                _mm_prefetch(src1 + (k + SSE_PFDIST + 3) * src1_w + k, _MM_HINT_T1);
+                _mm_prefetch(src2 + (k + SSE_PFDIST + 0) * src2_w + y, _MM_HINT_T1);
+                _mm_prefetch(src2 + (k + SSE_PFDIST + 1) * src2_w + y, _MM_HINT_T1);
+                _mm_prefetch(src2 + (k + SSE_PFDIST + 2) * src2_w + y, _MM_HINT_T1);
+                _mm_prefetch(src2 + (k + SSE_PFDIST + 3) * src2_w + y, _MM_HINT_T1);
 
-                __m128i I0 = _mm_loadu_si128((__m128i *)(src1 + (x + 0) * src1_w + k));
-                __m128i I1 = _mm_loadu_si128((__m128i *)(src1 + (x + 1) * src1_w + k));
-                __m128i I2 = _mm_loadu_si128((__m128i *)(src1 + (x + 2) * src1_w + k));
-                __m128i I3 = _mm_loadu_si128((__m128i *)(src1 + (x + 3) * src1_w + k));
+                // load eight rows from source 2
+                xmm0 = _mm_loadu_si128((__m128i *) (src2 + (k + 0) * src2_w + y));
+                xmm1 = _mm_loadu_si128((__m128i *) (src2 + (k + 1) * src2_w + y));
+                xmm2 = _mm_loadu_si128((__m128i *) (src2 + (k + 2) * src2_w + y));
+                xmm3 = _mm_loadu_si128((__m128i *) (src2 + (k + 3) * src2_w + y));
 
-                __m128i I4 = _mm_set_epi32 (src2[(k+3) * src2_w + y], src2[(k+2) * src2_w + y],
-                                            src2[(k+1) * src2_w + y], src2[k * src2_w + y]);
-                __m128i I5 = _mm_set_epi32 (src2[(k+3) * src2_w + (y+1)],
-                                            src2[(k+2) * src2_w + (y+1)], src2[(k+1) * src2_w + (y+1)],
-                                            src2[(k+0) * src2_w + (y+1)]);
-                __m128i I6 = _mm_set_epi32 (src2[(k+3) * src2_w + (y+2)],
-                                            src2[(k+2) * src2_w + (y+2)], src2[(k+1) * src2_w + (y+2)],
-                                            src2[(k+0) * src2_w + (y+2)]);
-                __m128i I7 = _mm_set_epi32 (src2[(k+3) * src2_w + (y+3)],
-                                            src2[(k+2) * src2_w + (y+3)], src2[(k+1) * src2_w + (y+3)],
-                                            src2[(k+0) * src2_w + (y+3)]);
+                // broadcast each elements from source 1
+                xmm4 = _mm_loadu_si128((__m128i *) (src1 + (x + 0) * src1_w + k));
+                xmm5 = _mm_shuffle_epi32(xmm4, 0x00);
+                xmm6 = _mm_shuffle_epi32(xmm4, 0x55);
+                xmm7 = _mm_shuffle_epi32(xmm4, 0xAA);
+                xmm8 = _mm_shuffle_epi32(xmm4, 0xFF);
 
-                __m128i T0 = _mm_mullo_epi32(I0, I4);
-                __m128i T1 = _mm_mullo_epi32(I0, I5);
-                __m128i T2 = _mm_mullo_epi32(I0, I6);
-                __m128i T3 = _mm_mullo_epi32(I0, I7);
+                // multiply
+                xmm5 = _mm_mullo_epi32(xmm5, xmm0); // row 1, 2
+                xmm6 = _mm_mullo_epi32(xmm6, xmm1);
+                xmm5 = _mm_add_epi32(xmm5, xmm6);
 
-                __m128i T4 = _mm_mullo_epi32(I1, I4);
-                __m128i T5 = _mm_mullo_epi32(I1, I5);
-                __m128i T6 = _mm_mullo_epi32(I1, I6);
-                __m128i T7 = _mm_mullo_epi32(I1, I7);
+                xmm7 = _mm_mullo_epi32(xmm7, xmm2); // row 3, 4
+                xmm8 = _mm_mullo_epi32(xmm8, xmm3);
+                xmm7 = _mm_add_epi32(xmm7, xmm8);
 
-                __m128i T8 = _mm_mullo_epi32(I2, I4);
-                __m128i T9 = _mm_mullo_epi32(I2, I5);
-                __m128i T10 = _mm_mullo_epi32(I2, I6);
-                __m128i T11 = _mm_mullo_epi32(I2, I7);
+                xmm5 = _mm_add_epi32(xmm5, xmm7); //sum
 
-                __m128i T12 = _mm_mullo_epi32(I3, I4);
-                __m128i T13 = _mm_mullo_epi32(I3, I5);
-                __m128i T14 = _mm_mullo_epi32(I3, I6);
-                __m128i T15 = _mm_mullo_epi32(I3, I7);
+                // save current result
+                xmm9 = _mm_add_epi32(xmm9, xmm5);
 
-                __m128i T16 = _mm_unpacklo_epi32(T0, T1);
-                __m128i T17 = _mm_unpacklo_epi32(T2, T3);
-                __m128i T18 = _mm_unpackhi_epi32(T0, T1);
-                __m128i T19 = _mm_unpackhi_epi32(T2, T3);
+                //------------------------------------------------------------//
+                // broadcast each elements from source 1
+                xmm4 = _mm_loadu_si128((__m128i *) (src1 + (x + 1) * src1_w + k));
+                xmm5 = _mm_shuffle_epi32(xmm4, 0x00);
+                xmm6 = _mm_shuffle_epi32(xmm4, 0x55);
+                xmm7 = _mm_shuffle_epi32(xmm4, 0xAA);
+                xmm8 = _mm_shuffle_epi32(xmm4, 0xFF);
 
-                __m128i T20 = _mm_unpacklo_epi64(T16, T17);
-                __m128i T21 = _mm_unpackhi_epi64(T16, T17);
-                __m128i T22 = _mm_unpacklo_epi64(T18, T19);
-                __m128i T23 = _mm_unpackhi_epi64(T18, T19);
+                // multiply
+                xmm5 = _mm_mullo_epi32(xmm5, xmm0); // row 1, 2
+                xmm6 = _mm_mullo_epi32(xmm6, xmm1);
+                xmm5 = _mm_add_epi32(xmm5, xmm6);
 
-                T20 = _mm_add_epi32(T20, T21);
-                T20 = _mm_add_epi32(T20, T22);
-                T20 = _mm_add_epi32(T20, T23);
+                xmm7 = _mm_mullo_epi32(xmm7, xmm2); // row 3, 4
+                xmm8 = _mm_mullo_epi32(xmm8, xmm3);
+                xmm7 = _mm_add_epi32(xmm7, xmm8);
 
-                des0 = _mm_add_epi32(T20, des0);
+                xmm5 = _mm_add_epi32(xmm5, xmm7); //sum
 
-                T16 = _mm_unpacklo_epi32(T4, T5);
-                T17 = _mm_unpacklo_epi32(T6, T7);
-                T18 = _mm_unpackhi_epi32(T4, T5);
-                T19 = _mm_unpackhi_epi32(T6, T7);
+                // save current result
+                xmm10 = _mm_add_epi32(xmm10, xmm5);
 
-                T20 = _mm_unpacklo_epi64(T16, T17);
-                T21 = _mm_unpackhi_epi64(T16, T17);
-                T22 = _mm_unpacklo_epi64(T18, T19);
-                T23 = _mm_unpackhi_epi64(T18, T19);
+                //------------------------------------------------------------//
+                // broadcast each elements from source 1
+                xmm4 = _mm_loadu_si128((__m128i *) (src1 + (x + 2) * src1_w + k));
+                xmm5 = _mm_shuffle_epi32(xmm4, 0x00);
+                xmm6 = _mm_shuffle_epi32(xmm4, 0x55);
+                xmm7 = _mm_shuffle_epi32(xmm4, 0xAA);
+                xmm8 = _mm_shuffle_epi32(xmm4, 0xFF);
 
-                T20 = _mm_add_epi32(T20, T21);
-                T20 = _mm_add_epi32(T20, T22);
-                T20 = _mm_add_epi32(T20, T23);
+                // multiply
+                xmm5 = _mm_mullo_epi32(xmm5, xmm0); // row 1, 2
+                xmm6 = _mm_mullo_epi32(xmm6, xmm1);
+                xmm5 = _mm_add_epi32(xmm5, xmm6);
 
-                des1 = _mm_add_epi32(T20, des1);
+                xmm7 = _mm_mullo_epi32(xmm7, xmm2); // row 3, 4
+                xmm8 = _mm_mullo_epi32(xmm8, xmm3);
+                xmm7 = _mm_add_epi32(xmm7, xmm8);
 
-                T16 = _mm_unpacklo_epi32(T8, T9);
-                T17 = _mm_unpacklo_epi32(T10, T11);
-                T18 = _mm_unpackhi_epi32(T8, T9);
-                T19 = _mm_unpackhi_epi32(T10, T11);
+                xmm5 = _mm_add_epi32(xmm5, xmm7); //sum
 
-                T20 = _mm_unpacklo_epi64(T16, T17);
-                T21 = _mm_unpackhi_epi64(T16, T17);
-                T22 = _mm_unpacklo_epi64(T18, T19);
-                T23 = _mm_unpackhi_epi64(T18, T19);
+                // save current result
+                xmm11 = _mm_add_epi32(xmm11, xmm5);
 
-                T20 = _mm_add_epi32(T20, T21);
-                T20 = _mm_add_epi32(T20, T22);
-                T20 = _mm_add_epi32(T20, T23);
+                //------------------------------------------------------------//
+                // broadcast each elements from source 1
+                xmm4 = _mm_loadu_si128((__m128i *) (src1 + (x + 3) * src1_w + k));
+                xmm5 = _mm_shuffle_epi32(xmm4, 0x00);
+                xmm6 = _mm_shuffle_epi32(xmm4, 0x55);
+                xmm7 = _mm_shuffle_epi32(xmm4, 0xAA);
+                xmm8 = _mm_shuffle_epi32(xmm4, 0xFF);
 
-                des2 = _mm_add_epi32(T20, des2);
+                // multiply
+                xmm5 = _mm_mullo_epi32(xmm5, xmm0); // row 1, 2
+                xmm6 = _mm_mullo_epi32(xmm6, xmm1);
+                xmm5 = _mm_add_epi32(xmm5, xmm6);
 
-                T16 = _mm_unpacklo_epi32(T12, T13);
-                T17 = _mm_unpacklo_epi32(T14, T15);
-                T18 = _mm_unpackhi_epi32(T12, T13);
-                T19 = _mm_unpackhi_epi32(T14, T15);
+                xmm7 = _mm_mullo_epi32(xmm7, xmm2); // row 3, 4
+                xmm8 = _mm_mullo_epi32(xmm8, xmm3);
+                xmm7 = _mm_add_epi32(xmm7, xmm8);
 
-                T20 = _mm_unpacklo_epi64(T16, T17);
-                T21 = _mm_unpackhi_epi64(T16, T17);
-                T22 = _mm_unpacklo_epi64(T18, T19);
-                T23 = _mm_unpackhi_epi64(T18, T19);
+                xmm5 = _mm_add_epi32(xmm5, xmm7); //sum
 
-                T20 = _mm_add_epi32(T20, T21);
-                T20 = _mm_add_epi32(T20, T22);
-                T20 = _mm_add_epi32(T20, T23);
-
-                des3 = _mm_add_epi32(T20, des3);
+                // save current result
+                xmm12 = _mm_add_epi32(xmm12, xmm5);
             }
 
-            _mm_storeu_si128((__m128i *)(dst + ((x + 0) * src2_w) + y), des0);
-            _mm_storeu_si128((__m128i *)(dst + ((x + 1) * src2_w) + y), des1);
-            _mm_storeu_si128((__m128i *)(dst + ((x + 2) * src2_w) + y), des2);
-            _mm_storeu_si128((__m128i *)(dst + ((x + 3) * src2_w) + y), des3);
+            _mm_storeu_si128((__m128i *)(dst + ((x + 0) * src2_w) + y), xmm9);
+            _mm_storeu_si128((__m128i *)(dst + ((x + 1) * src2_w) + y), xmm10);
+            _mm_storeu_si128((__m128i *)(dst + ((x + 2) * src2_w) + y), xmm11);
+            _mm_storeu_si128((__m128i *)(dst + ((x + 3) * src2_w) + y), xmm12);
         }
     }
 }
