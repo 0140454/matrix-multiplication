@@ -47,10 +47,10 @@ void sse_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
             __m128i des3 = _mm_setzero_si128 ();
 
             for (int k = 0; k < src2_w; k += 4) {
-                __m128i I0 = _mm_loadu_si128((__m128i *)(src1 + (x + 0) * src1_w + k));
-                __m128i I1 = _mm_loadu_si128((__m128i *)(src1 + (x + 1) * src1_w + k));
-                __m128i I2 = _mm_loadu_si128((__m128i *)(src1 + (x + 2) * src1_w + k));
-                __m128i I3 = _mm_loadu_si128((__m128i *)(src1 + (x + 3) * src1_w + k));
+                __m128i I0 = _mm_load_si128((__m128i *)(src1 + (x + 0) * src1_w + k));
+                __m128i I1 = _mm_load_si128((__m128i *)(src1 + (x + 1) * src1_w + k));
+                __m128i I2 = _mm_load_si128((__m128i *)(src1 + (x + 2) * src1_w + k));
+                __m128i I3 = _mm_load_si128((__m128i *)(src1 + (x + 3) * src1_w + k));
 
                 __m128i I4 = _mm_set_epi32 (src2[(k+3) * src2_w + y], src2[(k+2) * src2_w + y],
                                             src2[(k+1) * src2_w + y], src2[k * src2_w + y]);
@@ -149,10 +149,10 @@ void sse_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
                 des3 = _mm_add_epi32(T20, des3);
             }
 
-            _mm_storeu_si128((__m128i *)(dst + ((x + 0) * src2_w) + y), des0);
-            _mm_storeu_si128((__m128i *)(dst + ((x + 1) * src2_w) + y), des1);
-            _mm_storeu_si128((__m128i *)(dst + ((x + 2) * src2_w) + y), des2);
-            _mm_storeu_si128((__m128i *)(dst + ((x + 3) * src2_w) + y), des3);
+            _mm_store_si128((__m128i *)(dst + ((x + 0) * src2_w) + y), des0);
+            _mm_store_si128((__m128i *)(dst + ((x + 1) * src2_w) + y), des1);
+            _mm_store_si128((__m128i *)(dst + ((x + 2) * src2_w) + y), des2);
+            _mm_store_si128((__m128i *)(dst + ((x + 3) * src2_w) + y), des3);
         }
     }
 }
@@ -174,10 +174,10 @@ void sse_prefetch_multiply(int *src1, int *src2, int *dst, int src1_w,
                 _mm_prefetch(src2 + (k + SSE_PFDIST + 2) * src2_w + y, _MM_HINT_T1);
                 _mm_prefetch(src2 + (k + SSE_PFDIST + 3) * src2_w + y, _MM_HINT_T1);
 
-                __m128i I0 = _mm_loadu_si128((__m128i *)(src1 + (x + 0) * src1_w + k));
-                __m128i I1 = _mm_loadu_si128((__m128i *)(src1 + (x + 1) * src1_w + k));
-                __m128i I2 = _mm_loadu_si128((__m128i *)(src1 + (x + 2) * src1_w + k));
-                __m128i I3 = _mm_loadu_si128((__m128i *)(src1 + (x + 3) * src1_w + k));
+                __m128i I0 = _mm_load_si128((__m128i *)(src1 + (x + 0) * src1_w + k));
+                __m128i I1 = _mm_load_si128((__m128i *)(src1 + (x + 1) * src1_w + k));
+                __m128i I2 = _mm_load_si128((__m128i *)(src1 + (x + 2) * src1_w + k));
+                __m128i I3 = _mm_load_si128((__m128i *)(src1 + (x + 3) * src1_w + k));
 
                 __m128i I4 = _mm_set_epi32 (src2[(k+3) * src2_w + y], src2[(k+2) * src2_w + y],
                                             src2[(k+1) * src2_w + y], src2[k * src2_w + y]);
@@ -276,10 +276,10 @@ void sse_prefetch_multiply(int *src1, int *src2, int *dst, int src1_w,
                 des3 = _mm_add_epi32(T20, des3);
             }
 
-            _mm_storeu_si128((__m128i *)(dst + ((x + 0) * src2_w) + y), des0);
-            _mm_storeu_si128((__m128i *)(dst + ((x + 1) * src2_w) + y), des1);
-            _mm_storeu_si128((__m128i *)(dst + ((x + 2) * src2_w) + y), des2);
-            _mm_storeu_si128((__m128i *)(dst + ((x + 3) * src2_w) + y), des3);
+            _mm_store_si128((__m128i *)(dst + ((x + 0) * src2_w) + y), des0);
+            _mm_store_si128((__m128i *)(dst + ((x + 1) * src2_w) + y), des1);
+            _mm_store_si128((__m128i *)(dst + ((x + 2) * src2_w) + y), des2);
+            _mm_store_si128((__m128i *)(dst + ((x + 3) * src2_w) + y), des3);
         }
     }
 }
@@ -303,14 +303,14 @@ void avx_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
 
             for (int k = 0; k < src2_h; k += 8) {
                 // load eight rows from source 2
-                ymm0 = _mm256_loadu_si256((__m256i *) (src2 + (k + 0) * src2_w + j));
-                ymm1 = _mm256_loadu_si256((__m256i *) (src2 + (k + 1) * src2_w + j));
-                ymm2 = _mm256_loadu_si256((__m256i *) (src2 + (k + 2) * src2_w + j));
-                ymm3 = _mm256_loadu_si256((__m256i *) (src2 + (k + 3) * src2_w + j));
-                ymm4 = _mm256_loadu_si256((__m256i *) (src2 + (k + 4) * src2_w + j));
-                ymm5 = _mm256_loadu_si256((__m256i *) (src2 + (k + 5) * src2_w + j));
-                ymm6 = _mm256_loadu_si256((__m256i *) (src2 + (k + 6) * src2_w + j));
-                ymm7 = _mm256_loadu_si256((__m256i *) (src2 + (k + 7) * src2_w + j));
+                ymm0 = _mm256_load_si256((__m256i *) (src2 + (k + 0) * src2_w + j));
+                ymm1 = _mm256_load_si256((__m256i *) (src2 + (k + 1) * src2_w + j));
+                ymm2 = _mm256_load_si256((__m256i *) (src2 + (k + 2) * src2_w + j));
+                ymm3 = _mm256_load_si256((__m256i *) (src2 + (k + 3) * src2_w + j));
+                ymm4 = _mm256_load_si256((__m256i *) (src2 + (k + 4) * src2_w + j));
+                ymm5 = _mm256_load_si256((__m256i *) (src2 + (k + 5) * src2_w + j));
+                ymm6 = _mm256_load_si256((__m256i *) (src2 + (k + 6) * src2_w + j));
+                ymm7 = _mm256_load_si256((__m256i *) (src2 + (k + 7) * src2_w + j));
 
                 // broadcast each elements from source 1
                 ymm8 = _mm256_set1_epi32(src1[(i + 0) * src1_w + k + 0]);
@@ -592,14 +592,14 @@ void avx_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
                 ymm23 = _mm256_add_epi32(ymm23, ymm8);
             }
 
-            _mm256_storeu_si256((__m256i *) (dst + (i + 0) * src2_w + j), ymm16);
-            _mm256_storeu_si256((__m256i *) (dst + (i + 1) * src2_w + j), ymm17);
-            _mm256_storeu_si256((__m256i *) (dst + (i + 2) * src2_w + j), ymm18);
-            _mm256_storeu_si256((__m256i *) (dst + (i + 3) * src2_w + j), ymm19);
-            _mm256_storeu_si256((__m256i *) (dst + (i + 4) * src2_w + j), ymm20);
-            _mm256_storeu_si256((__m256i *) (dst + (i + 5) * src2_w + j), ymm21);
-            _mm256_storeu_si256((__m256i *) (dst + (i + 6) * src2_w + j), ymm22);
-            _mm256_storeu_si256((__m256i *) (dst + (i + 7) * src2_w + j), ymm23);
+            _mm256_store_si256((__m256i *) (dst + (i + 0) * src2_w + j), ymm16);
+            _mm256_store_si256((__m256i *) (dst + (i + 1) * src2_w + j), ymm17);
+            _mm256_store_si256((__m256i *) (dst + (i + 2) * src2_w + j), ymm18);
+            _mm256_store_si256((__m256i *) (dst + (i + 3) * src2_w + j), ymm19);
+            _mm256_store_si256((__m256i *) (dst + (i + 4) * src2_w + j), ymm20);
+            _mm256_store_si256((__m256i *) (dst + (i + 5) * src2_w + j), ymm21);
+            _mm256_store_si256((__m256i *) (dst + (i + 6) * src2_w + j), ymm22);
+            _mm256_store_si256((__m256i *) (dst + (i + 7) * src2_w + j), ymm23);
         }
     }
 }
@@ -633,14 +633,14 @@ void avx_prefetch_multiply(int *src1, int *src2, int *dst, int src1_w,
                 _mm_prefetch(src2 + (k + AVX_PFDIST + 7) * src2_w + j, _MM_HINT_T1);
 
                 // load eight rows from source 2
-                ymm0 = _mm256_loadu_si256((__m256i *) (src2 + (k + 0) * src2_w + j));
-                ymm1 = _mm256_loadu_si256((__m256i *) (src2 + (k + 1) * src2_w + j));
-                ymm2 = _mm256_loadu_si256((__m256i *) (src2 + (k + 2) * src2_w + j));
-                ymm3 = _mm256_loadu_si256((__m256i *) (src2 + (k + 3) * src2_w + j));
-                ymm4 = _mm256_loadu_si256((__m256i *) (src2 + (k + 4) * src2_w + j));
-                ymm5 = _mm256_loadu_si256((__m256i *) (src2 + (k + 5) * src2_w + j));
-                ymm6 = _mm256_loadu_si256((__m256i *) (src2 + (k + 6) * src2_w + j));
-                ymm7 = _mm256_loadu_si256((__m256i *) (src2 + (k + 7) * src2_w + j));
+                ymm0 = _mm256_load_si256((__m256i *) (src2 + (k + 0) * src2_w + j));
+                ymm1 = _mm256_load_si256((__m256i *) (src2 + (k + 1) * src2_w + j));
+                ymm2 = _mm256_load_si256((__m256i *) (src2 + (k + 2) * src2_w + j));
+                ymm3 = _mm256_load_si256((__m256i *) (src2 + (k + 3) * src2_w + j));
+                ymm4 = _mm256_load_si256((__m256i *) (src2 + (k + 4) * src2_w + j));
+                ymm5 = _mm256_load_si256((__m256i *) (src2 + (k + 5) * src2_w + j));
+                ymm6 = _mm256_load_si256((__m256i *) (src2 + (k + 6) * src2_w + j));
+                ymm7 = _mm256_load_si256((__m256i *) (src2 + (k + 7) * src2_w + j));
 
                 // broadcast each elements from source 1
                 ymm8 = _mm256_set1_epi32(src1[(i + 0) * src1_w + k + 0]);
@@ -922,14 +922,14 @@ void avx_prefetch_multiply(int *src1, int *src2, int *dst, int src1_w,
                 ymm23 = _mm256_add_epi32(ymm23, ymm8);
             }
 
-            _mm256_storeu_si256((__m256i *) (dst + (i + 0) * src2_w + j), ymm16);
-            _mm256_storeu_si256((__m256i *) (dst + (i + 1) * src2_w + j), ymm17);
-            _mm256_storeu_si256((__m256i *) (dst + (i + 2) * src2_w + j), ymm18);
-            _mm256_storeu_si256((__m256i *) (dst + (i + 3) * src2_w + j), ymm19);
-            _mm256_storeu_si256((__m256i *) (dst + (i + 4) * src2_w + j), ymm20);
-            _mm256_storeu_si256((__m256i *) (dst + (i + 5) * src2_w + j), ymm21);
-            _mm256_storeu_si256((__m256i *) (dst + (i + 6) * src2_w + j), ymm22);
-            _mm256_storeu_si256((__m256i *) (dst + (i + 7) * src2_w + j), ymm23);
+            _mm256_store_si256((__m256i *) (dst + (i + 0) * src2_w + j), ymm16);
+            _mm256_store_si256((__m256i *) (dst + (i + 1) * src2_w + j), ymm17);
+            _mm256_store_si256((__m256i *) (dst + (i + 2) * src2_w + j), ymm18);
+            _mm256_store_si256((__m256i *) (dst + (i + 3) * src2_w + j), ymm19);
+            _mm256_store_si256((__m256i *) (dst + (i + 4) * src2_w + j), ymm20);
+            _mm256_store_si256((__m256i *) (dst + (i + 5) * src2_w + j), ymm21);
+            _mm256_store_si256((__m256i *) (dst + (i + 6) * src2_w + j), ymm22);
+            _mm256_store_si256((__m256i *) (dst + (i + 7) * src2_w + j), ymm23);
         }
     }
 }

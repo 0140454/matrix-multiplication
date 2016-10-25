@@ -6,6 +6,7 @@
 #include <assert.h>
 
 #include <immintrin.h>
+#include <malloc.h>
 
 #define TEST_W 1024
 #define TEST_H 1024
@@ -86,14 +87,14 @@ int main(int argc, char *argv[])
 
     {
         struct timespec start, end;
-        int *src1 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
-        int *src2 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
-        int *out1 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
-        int *out2 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
-        int *out3 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
-        int *out4 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
-        int *out5 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
-        int *out6 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
+        int *src1 = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
+        int *src2 = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
+        int *out1 = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
+        int *out2 = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
+        int *out3 = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
+        int *out4 = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
+        int *out5 = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
+        int *out6 = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
 
         srand(time(NULL));
         for (int i = 0; i < TEST_H; ++i) {
