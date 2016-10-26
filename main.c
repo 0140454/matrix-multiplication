@@ -12,7 +12,9 @@
 #define TEST_H 1024
 
 #include "impl.c"
-
+/*int *add_s(int *a, int *b, int n);
+int *mul_s(int *dst,int *a, int *b, int n);
+void concer(int*dst, int *m11, int *m12, int *m21, int *m22, int n);*/
 static long diff_in_us(struct timespec t1, struct timespec t2)
 {
     struct timespec diff;
@@ -140,6 +142,13 @@ int main(int argc, char *argv[])
         avx_prefetch_multiply(src1, src2, out2, TEST_W, TEST_H, TEST_W, TEST_H);
         clock_gettime(CLOCK_REALTIME, &end);
         printf("avx_prefetch: \t %ld us\n", diff_in_us(start, end));
+#endif
+
+#if defined(strassen)
+        clock_gettime(CLOCK_REALTIME, &start);
+        Strassen_multiply(src1, src2, out2, TEST_W, TEST_H, TEST_W, TEST_H);
+        clock_gettime(CLOCK_REALTIME, &end);
+        printf("strassen: \t %ld us\n", diff_in_us(start, end));
 #endif
 
 #if !defined(naive) && VERIFY
