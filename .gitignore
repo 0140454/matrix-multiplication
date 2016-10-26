@@ -11,3 +11,4 @@ sse
 sse_prefetch
 avx
 avx_prefetch
+strassen

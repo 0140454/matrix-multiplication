@@ -142,6 +142,13 @@ int main(int argc, char *argv[])
         printf("avx_prefetch: \t %ld us\n", diff_in_us(start, end));
 #endif
 
+#if defined(strassen)
+        clock_gettime(CLOCK_REALTIME, &start);
+        strassen_multiply(src1, src2, out2, TEST_W, TEST_H, TEST_W, TEST_H);
+        clock_gettime(CLOCK_REALTIME, &end);
+        printf("strassen: \t %ld us\n", diff_in_us(start, end));
+#endif
+
 #if !defined(naive) && VERIFY
         assert(0 == memcmp(out2, out1, 64 * sizeof(int)) &&
                "Verification fails");

@@ -36,6 +36,132 @@ void submatrix_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
     }
 }
 
+int *strassen_add(int *src1, int *src2, int *dst, int size)
+{
+    for (int i = 0; i < size; ++i) {
+        for (int k = 0; k < size; ++k) {
+            dst[i * size + k] = src1[i * size + k] + src2[i * size + k];
+        }
+    }
+
+    return dst;
+}
+
+int *strassen_minus(int *src1, int *src2, int *dst, int size)
+{
+    for (int i = 0; i < size; ++i) {
+        for (int k = 0; k < size; ++k) {
+            dst[i * size + k] = src1[i * size + k] - src2[i * size + k];
+        }
+    }
+
+    return dst;
+}
+
+void strassen_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
+                       int src2_w, int src2_h)
+{
+    if (src1_w <= 2) {
+        dst[0] = src1[0] * src2[0] + src1[1] * src2[2];
+        dst[1] = src1[0] * src2[1] + src1[1] * src2[3];
+        dst[2] = src1[2] * src2[0] + src1[3] * src2[2];
+        dst[3] = src1[2] * src2[1] + src1[3] * src2[3];
+
+        return;
+    }
+
+    int new_size = src1_w / 2;
+    int *buffer = (int *) malloc(sizeof(int) * new_size * new_size * 21);
+    int *a11 = buffer, *a12 = buffer + new_size * new_size,
+         *a21 = buffer + new_size * new_size * 2,
+          *a22 = buffer + new_size * new_size * 3,
+           *b11 = buffer + new_size * new_size * 4,
+            *b12 = buffer + new_size * new_size * 5,
+             *b21 = buffer + new_size * new_size * 6,
+              *b22 = buffer + new_size * new_size * 7,
+               *c11 = buffer + new_size * new_size * 8,
+                *c12 = buffer + new_size * new_size * 9,
+                 *c21 = buffer + new_size * new_size * 10,
+                  *c22 = buffer + new_size * new_size * 11;
+    int *m1 = buffer + new_size * new_size * 12,
+         *m2 = buffer + new_size * new_size * 13,
+          *m3 = buffer + new_size * new_size * 14,
+           *m4 = buffer + new_size * new_size * 15,
+            *m5 = buffer + new_size * new_size * 16,
+             *m6 = buffer + new_size * new_size * 17,
+              *m7 = buffer + new_size * new_size * 18;
+    int *tmp1 = buffer + new_size * new_size * 19,
+         *tmp2 = buffer + new_size * new_size * 20;
+
+    for (int i = 0; i < new_size; ++i) {
+        memcpy(a11 + i * new_size, src1 + i * src1_w, sizeof(int) * new_size);
+        memcpy(a12 + i * new_size, src1 + i * src1_w + new_size,
+               sizeof(int) * new_size);
+        memcpy(a21 + i * new_size, src1 + (i + new_size) * src1_w,
+               sizeof(int) * new_size);
+        memcpy(a22 + i * new_size, src1 + (i + new_size) * src1_w + new_size,
+               sizeof(int) * new_size);
+
+        memcpy(b11 + i * new_size, src2 + i * src2_w, sizeof(int) * new_size);
+        memcpy(b12 + i * new_size, src2 + i * src2_w + new_size,
+               sizeof(int) * new_size);
+        memcpy(b21 + i * new_size, src2 + (i + new_size) * src2_w,
+               sizeof(int) * new_size);
+        memcpy(b22 + i * new_size, src2 + (i + new_size) * src2_w + new_size,
+               sizeof(int) * new_size);
+    }
+
+    strassen_multiply(strassen_add(a11, a22, tmp1, new_size),
+                      strassen_add(b11, b22, tmp2, new_size),
+                      m1, new_size, new_size, new_size, new_size);
+
+    strassen_multiply(strassen_add(a21, a22, tmp1, new_size),
+                      b11,
+                      m2, new_size, new_size, new_size, new_size);
+
+    strassen_multiply(a11,
+                      strassen_minus(b12, b22, tmp2, new_size),
+                      m3, new_size, new_size, new_size, new_size);
+
+    strassen_multiply(a22,
+                      strassen_minus(b21, b11, tmp2, new_size),
+                      m4, new_size, new_size, new_size, new_size);
+
+    strassen_multiply(strassen_add(a11, a12, tmp1, new_size),
+                      b22,
+                      m5, new_size, new_size, new_size, new_size);
+
+    strassen_multiply(strassen_minus(a21, a11, tmp1, new_size),
+                      strassen_add(b11, b12, tmp2, new_size),
+                      m6, new_size, new_size, new_size, new_size);
+
+    strassen_multiply(strassen_minus(a12, a22, tmp1, new_size),
+                      strassen_add(b21, b22, tmp2, new_size),
+                      m7, new_size, new_size, new_size, new_size);
+
+    strassen_add(m1, m4, tmp1, new_size);
+    strassen_minus(m5, m7, tmp2, new_size);
+    strassen_minus(tmp1, tmp2, c11, new_size);
+
+    strassen_add(m3, m5, c12, new_size);
+    strassen_add(m2, m4, c21, new_size);
+
+    strassen_minus(m1, m2, tmp1, new_size);
+    strassen_add(m3, m6, tmp2, new_size);
+    strassen_add(tmp1, tmp2, c22, new_size);
+
+    for (int i = 0; i < new_size; ++i) {
+        memcpy(dst + i * src1_w, c11 + i * new_size, sizeof(int) * new_size);
+        memcpy(dst + i * src1_w + new_size, c12 + i * new_size, sizeof(int) * new_size);
+        memcpy(dst + (i + new_size) * src1_w, c21 + i * new_size,
+               sizeof(int) * new_size);
+        memcpy(dst + (i + new_size) * src1_w + new_size, c22 + i * new_size,
+               sizeof(int) * new_size);
+    }
+
+    free(buffer);
+}
+
 void sse_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
                   int src2_w, int src2_h)
 {
