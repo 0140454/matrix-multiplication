@@ -91,10 +91,6 @@ int main(int argc, char *argv[])
         int *src2 = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
         int *out1 = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
         int *out2 = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
-        int *out3 = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
-        int *out4 = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
-        int *out5 = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
-        int *out6 = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
 
         srand(time(NULL));
         for (int i = 0; i < TEST_H; ++i) {
@@ -104,7 +100,7 @@ int main(int argc, char *argv[])
             }
         }
 
-#if defined(naive)
+#if defined(naive) || VERIFY
         clock_gettime(CLOCK_REALTIME, &start);
         naive_multiply(src1, src2, out1, TEST_W, TEST_H, TEST_W, TEST_H);
         clock_gettime(CLOCK_REALTIME, &end);
@@ -120,40 +116,41 @@ int main(int argc, char *argv[])
 
 #if defined(sse)
         clock_gettime(CLOCK_REALTIME, &start);
-        sse_multiply(src1, src2, out3, TEST_W, TEST_H, TEST_W, TEST_H);
+        sse_multiply(src1, src2, out2, TEST_W, TEST_H, TEST_W, TEST_H);
         clock_gettime(CLOCK_REALTIME, &end);
         printf("sse: \t\t %ld us\n", diff_in_us(start, end));
 #endif
 
 #if defined(sse_prefetch)
         clock_gettime(CLOCK_REALTIME, &start);
-        sse_prefetch_multiply(src1, src2, out4, TEST_W, TEST_H, TEST_W, TEST_H);
+        sse_prefetch_multiply(src1, src2, out2, TEST_W, TEST_H, TEST_W, TEST_H);
         clock_gettime(CLOCK_REALTIME, &end);
         printf("sse_prefetch: \t %ld us\n", diff_in_us(start, end));
 #endif
 
 #if defined(avx)
         clock_gettime(CLOCK_REALTIME, &start);
-        avx_multiply(src1, src2, out5, TEST_W, TEST_H, TEST_W, TEST_H);
+        avx_multiply(src1, src2, out2, TEST_W, TEST_H, TEST_W, TEST_H);
         clock_gettime(CLOCK_REALTIME, &end);
         printf("avx: \t\t %ld us\n", diff_in_us(start, end));
 #endif
 
 #if defined(avx_prefetch)
         clock_gettime(CLOCK_REALTIME, &start);
-        avx_prefetch_multiply(src1, src2, out6, TEST_W, TEST_H, TEST_W, TEST_H);
+        avx_prefetch_multiply(src1, src2, out2, TEST_W, TEST_H, TEST_W, TEST_H);
         clock_gettime(CLOCK_REALTIME, &end);
         printf("avx_prefetch: \t %ld us\n", diff_in_us(start, end));
+#endif
+
+#if !defined(naive) && VERIFY
+        assert(0 == memcmp(out2, out1, 64 * sizeof(int)) &&
+               "Verification fails");
 #endif
 
         free(src1);
         free(src2);
         free(out1);
         free(out2);
-        free(out3);
-        free(out4);
-        free(out5);
-        free(out6);
     }
 
     return 0;
