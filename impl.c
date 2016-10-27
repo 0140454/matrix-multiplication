@@ -1,9 +1,13 @@
 #ifndef _MUTIPLY_H
 #define _MULTIPLY_H
-int *add_s(int *res,int *a, int *b, int n);
-int *sub_s(int *res,int *x, int *y, int n);
-int *mul_s(int *dst,int *a, int *b, int n);
-void concer(int*dst, int *m11, int *m12, int *m21, int *m22, int n);
+
+void Strassen_save_result(int *res, int *m11, int *m12, int *m21, int *m22,
+                          int n);
+int *Strassen_helper(int *res, int *src1, int *src2, int n);
+int *Strassen_add(int *res, int *x, int *y, int n);
+int *Strassen_sub(int *res, int *x, int *y, int n);
+int *Strassen_mul(int *res, int *x, int *y, int n);
+
 void naive_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
                     int src2_w, int src2_h)
 {
@@ -937,155 +941,144 @@ void avx_prefetch_multiply(int *src1, int *src2, int *dst, int src1_w,
     }
 }
 
-int *Strassen(int *res,int *src1, int *src2, int n)
+int *Strassen_helper(int *res, int *src1, int *src2, int n)
 {
-
-
-    int n2= n/2;
-    int nn = n2*n2;
-    int *buffer = (int*) malloc(sizeof(int)*nn*21);
+    int new_n = n / 2;
+    int size = new_n * new_n;
+    int *buffer = (int *) malloc(sizeof(int) * size * 21);
     int *a11 = buffer,
-         *a12 = buffer + nn,
-          *a21 = buffer + nn * 2,
-           *a22 = buffer + nn * 3,
-            *b11 = buffer + nn * 4,
-             *b12 = buffer + nn * 5,
-              *b21 = buffer + nn * 6,
-               *b22 = buffer + nn * 7,
-                *m1 = buffer + nn * 8,
-                 *m2 = buffer + nn * 9,
-                  *m3 = buffer + nn * 10,
-                   *m4 = buffer + nn * 11;
+         *a12 = buffer + size,
+          *a21 = buffer + size * 2,
+           *a22 = buffer + size * 3,
+            *b11 = buffer + size * 4,
+             *b12 = buffer + size * 5,
+              *b21 = buffer + size * 6,
+               *b22 = buffer + size * 7,
+                *m1 = buffer + size * 8,
+                 *m2 = buffer + size * 9,
+                  *m3 = buffer + size * 10,
+                   *m4 = buffer + size * 11;
+    int *p1 = buffer + size * 12,
+         *p2 = buffer + size * 13,
+          *p3 = buffer + size * 14,
+           *p4 = buffer + size * 15,
+            *p5 = buffer + size * 16,
+             *p6 = buffer + size * 17,
+              *p7 = buffer + size * 18;
+    int *ares = buffer + size * 19,
+         *bres = buffer + size * 20;
 
-    int *p1 = buffer + nn * 12,
-         *p2 = buffer + nn * 13,
-          *p3 = buffer + nn * 14,
-           *p4 = buffer + nn * 15,
-            *p5 = buffer + nn * 16,
-             *p6 = buffer + nn * 17,
-              *p7 = buffer + nn * 18;
-    int *ares = buffer + nn * 19,
-         *bres = buffer + nn * 20;
+    for(int i = 0; i < new_n; i++) {
+        for(int j = 0; j < new_n; j++) {
+            a11[i * new_n + j] = src1[i * n + j];
+            a12[i * new_n + j] = src1[i * n + j + new_n];
+            a21[i * new_n + j] = src1[(i + new_n) * n + j];
+            a22[i * new_n + j] = src1[(i + new_n) * n + j + new_n];
 
-
-    for(int i=0; i<n2; i++) {
-        for(int j=0; j<n2; j++) {
-            a11[i*n2+j] = src1[i*n+j];
-            a12[i*n2+j] = src1[i*n+j+n2];
-            a21[i*n2+j] = src1[(i+n2)*n+j];
-            a22[i*n2+j] = src1[(i+n2)*n+j+(n2)];
-
-            b11[i*n2+j] = src2[(i*n)+j];
-            b12[i*n2+j] = src2[(i*n)+j+n2];
-            b21[i*n2+j] = src2[(i+n2)*n+j];
-            b22[i*n2+j] = src2[(i+n2)*n+j+(n2)];
-
+            b11[i * new_n + j] = src2[(i * n) + j];
+            b12[i * new_n + j] = src2[(i * n) + j + new_n];
+            b21[i * new_n + j] = src2[(i + new_n) * n + j];
+            b22[i * new_n + j] = src2[(i + new_n) * n + j + new_n];
         }
-
     }
 
+    Strassen_mul(p1,
+                 Strassen_sub(ares, a12, a22, new_n),
+                 Strassen_add(bres, b21, b22, new_n), new_n);
+    Strassen_mul(p2,
+                 Strassen_add(ares, a11, a22, new_n),
+                 Strassen_add(bres, b11, b22, new_n), new_n);
+    Strassen_mul(p3,
+                 Strassen_sub(ares, a11, a21, new_n),
+                 Strassen_add(bres, b11, b12, new_n), new_n);
+    Strassen_mul(p4, Strassen_add(ares, a11, a12, new_n), b22, new_n);
+    Strassen_mul(p5, a11, Strassen_sub(bres, b12, b22, new_n), new_n);
+    Strassen_mul(p6, a22, Strassen_sub(bres, b21, b11, new_n), new_n);
+    Strassen_mul(p7, Strassen_add(ares, a21, a22, new_n), b11, new_n);
 
-    mul_s(p1,sub_s(ares,a12,a22,n2),add_s(bres,b21,b22,n2),n2);
-    mul_s(p2,add_s(ares,a11,a22,n2),add_s(bres,b11,b22,n2),n2);
-    mul_s(p3,sub_s(ares,a11,a21,n2),add_s(bres,b11,b12,n2),n2);
-    mul_s(p4,add_s(ares,a11,a12,n2),b22,n2);
-    mul_s(p5,a11,sub_s(bres,b12,b22,n2),n2);
-    mul_s(p6,a22,sub_s(bres,b21,b11,n2),n2);
-    mul_s(p7,add_s(ares,a21,a22,n2),b11,n2);
+    Strassen_sub(m1,
+                 Strassen_add(ares, p6, Strassen_add(bres, p1, p2, new_n), new_n),
+                 p4, new_n);
+    Strassen_add(m2, p4, p5, new_n);
+    Strassen_add(m3, p6, p7, new_n);
+    Strassen_sub(m4,
+                 Strassen_sub(ares, Strassen_add(bres, p2, p5, new_n), p7, new_n),
+                 p3, new_n);
 
-
-    sub_s(m1,add_s(ares,p6,add_s(bres,p1,p2,n2),n2),p4,n2);
-    add_s(m2,p4,p5,n2);
-    add_s(m3,p6,p7,n2);
-    sub_s(m4,sub_s(ares,add_s(bres,p2,p5,n2),p7,n2),p3,n2);
-
-    concer(res,m1,m2,m3,m4,n2);
+    Strassen_save_result(res, m1, m2, m3, m4, new_n);
 
     free(buffer);
 
     return res;
 }
 
-void concer(int*res, int *m11, int *m12, int *m21, int *m22,int n)
+void Strassen_save_result(int *res, int *m11, int *m12, int *m21, int *m22,
+                          int n)
 {
-    for(int i=0; i<n; i++) {
-        for(int j=0; j<n; j++) {
-            res[i*2*n+j] = m11[i*n+j];
-            res[i*2*n+j+n] = m12[i*n+j];
-            res[(i+n)*n*2+j] = m21[i*n+j];
-            res[(i+n)*n*2+j+n] = m22[i*n+j];
-
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++) {
+            res[i * 2 * n + j] = m11[i * n + j];
+            res[i * 2 * n + j + n] = m12[i * n + j];
+            res[(i + n) * n * 2 + j] = m21[i * n + j];
+            res[(i + n) * n * 2 + j + n] = m22[i * n  + j];
         }
-
     }
-
 }
 
-int *add_s(int *res, int *x, int *y, int n)
+int *Strassen_add(int *res, int *x, int *y, int n)
 {
-
-    //  int *res= (int*) malloc(sizeof(int)*n*n);
     memset(res, 0, sizeof(int) * n * n);
-    for(int i=0; i<n; i++) {
-        for(int j=0; j<n; j++)
-            res[i*n+j] = x[i*n+j] + y[i*n+j];
+
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++) {
+            res[i * n + j] = x[i * n + j] + y[i * n + j];
+        }
     }
+
     return res;
-
 }
-int *sub_s(int *res,int *x, int *y, int n)
-{
 
-    //int *res= (int*) malloc(sizeof(int)*n*n);
+int *Strassen_sub(int *res, int *x, int *y, int n)
+{
     memset(res, 0, sizeof(int) * n * n);
-    for(int i=0; i<n; i++) {
-        for(int j=0; j<n; j++)
-            res[i*n+j] = x[i*n+j] - y[i*n+j];
-    }
-    return res;
 
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            res[i * n + j] = x[i * n + j] - y[i * n + j];
+        }
+    }
+
+    return res;
 }
 
-int* mul_s(int *dst, int *a, int *b, int n)
+int *Strassen_mul(int *dst, int *a, int *b, int n)
 {
+    if (n == 2) {
+        int P1 = (a[0 * n + 1] - a[1 * n + 1]) * (b[1 * n + 0] + b[1 * n + 1]);
+        int P2 = (a[0 * n + 0] + a[1 * n + 1]) * (b[0 * n + 0] + b[1 * n + 1]);
+        int P3 = (a[0 * n + 0] - a[1 * n + 0]) * (b[0 * n + 0] + b[0 * n + 1]);
+        int P4 = (a[0 * n + 0] + a[0 * n + 1]) * b[1 * n + 1];
+        int P5 = a[0 * n + 0] * (b[0 * n + 1] - b[1 * n + 1]);
+        int P6 = a[1 * n + 1] * (b[1 * n + 0] - b[0 * n + 0]);
+        int P7 = (a[1 * n + 0] + a[1 * n + 1]) * b[0 * n + 0];
 
+        dst[0 * n + 0] = P1 + P2 - P4 + P6;
+        dst[0 * n + 1] = P4 + P5;
+        dst[1 * n + 0] = P6 + P7;
+        dst[1 * n + 1] = P2 - P3 + P5 - P7;
 
-    if(n == 2) {
-
-
-        int P1 = (a[0*n+1]-a[1*n+1])*(b[1*n+0]+b[1*n+1]);
-        int P2 = (a[0*n+0]+a[1*n+1])*(b[0*n+0]+b[1*n+1]);
-        int P3 = (a[0*n+0]-a[1*n+0])*(b[0*n+0]+b[0*n+1]);
-        int P4 = (a[0*n+0]+a[0*n+1])*b[1*n+1];
-        int P5 = a[0*n+0]*(b[0*n+1]-b[1*n+1]);
-        int P6 = a[1*n+1]*(b[1*n+0]-b[0*n+0]);
-        int P7 = (a[1*n+0]+a[1*n+1])*b[0*n+0];
-
-        dst[0*n+0] = P1 + P2 - P4 + P6;
-        dst[0*n+1] = P4 + P5;
-        dst[1*n+0] = P6 + P7;
-        dst[1*n+1] = P2 - P3 + P5 - P7;
         return dst;
     }
 
-    else
-        return Strassen(dst,a,b,n);
-
-
+    return Strassen_helper(dst, a, b, n);
 }
 
 void Strassen_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
                        int src2_w, int src2_h)
 {
-
     memset(dst, 0, sizeof(int) * src1_h * src2_w);
 
-
-    Strassen(dst,src1,src2,src1_w);
-
-
+    Strassen_helper(dst, src1, src2, src1_w);
 }
-
-
 
 #endif

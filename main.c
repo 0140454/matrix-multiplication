@@ -12,9 +12,7 @@
 #define TEST_H 1024
 
 #include "impl.c"
-/*int *add_s(int *a, int *b, int n);
-int *mul_s(int *dst,int *a, int *b, int n);
-void concer(int*dst, int *m11, int *m12, int *m21, int *m22, int n);*/
+
 static long diff_in_us(struct timespec t1, struct timespec t2)
 {
     struct timespec diff;
