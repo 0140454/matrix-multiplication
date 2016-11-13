@@ -1,6 +1,8 @@
 #ifndef _MUTIPLY_H
 #define _MULTIPLY_H
 
+#include "list.h"
+
 void Strassen_save_result(int *res, int *m11, int *m12, int *m21, int *m22,
                           int n);
 int *Strassen_helper(int *res, int *src1, int *src2, int n);
@@ -8,40 +10,40 @@ int *Strassen_add(int *res, int *x, int *y, int n);
 int *Strassen_sub(int *res, int *x, int *y, int n);
 int *Strassen_mul(int *res, int *x, int *y, int n);
 
-void naive_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
-                    int src2_w, int src2_h)
-{
-    memset(dst, 0, sizeof(int) * src1_h * src2_w);
+extern algo_t *list;
 
-    for (int i = 0; i < src1_h; ++i) {
-        for (int j = 0; j < src2_w; ++j) {
-            for (int k = 0; k < src2_h; ++k) {
-                dst[i * src2_w + j] += src1[i * src1_w + k] * src2[k * src2_w + j];
-            }
+FUNC_BEGIN(naive)
+memset(dst, 0, sizeof(int) * src1_h * src2_w);
+
+for (int i = 0; i < src1_h; ++i)
+{
+    for (int j = 0; j < src2_w; ++j) {
+        for (int k = 0; k < src2_h; ++k) {
+            dst[i * src2_w + j] += src1[i * src1_w + k] * src2[k * src2_w + j];
         }
     }
 }
+FUNC_END(naive)
 
-void submatrix_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
-                        int src2_w, int src2_h)
+FUNC_BEGIN(submatrix)
+memset(dst, 0, sizeof(int) * src1_h * src2_w);
+
+for (int i = 0; i < src1_h; i += 4)
 {
-    memset(dst, 0, sizeof(int) * src1_h * src2_w);
-
-    for (int i = 0; i < src1_h; i += 4) {
-        for (int j = 0; j < src2_w; j += 4) {
-            for (int k = 0; k < src2_h; k += 4) {
-                for (int i2 = 0; i2 < 4; ++i2) {
-                    for (int j2 = 0; j2 < 4; ++j2) {
-                        for (int k2 = 0; k2 < 4; ++k2) {
-                            dst[(i + i2) * src2_w + (j + j2)] += src1[(i + i2) * src1_w + (k + k2)] *
-                                                                 src2[(k + k2) * src2_w + (j + j2)];
-                        }
+    for (int j = 0; j < src2_w; j += 4) {
+        for (int k = 0; k < src2_h; k += 4) {
+            for (int i2 = 0; i2 < 4; ++i2) {
+                for (int j2 = 0; j2 < 4; ++j2) {
+                    for (int k2 = 0; k2 < 4; ++k2) {
+                        dst[(i + i2) * src2_w + (j + j2)] += src1[(i + i2) * src1_w + (k + k2)] *
+                                                             src2[(k + k2) * src2_w + (j + j2)];
                     }
                 }
             }
         }
     }
 }
+FUNC_END(submatrix)
 
 void sse_multiply(int *src1, int *src2, int *dst, int src1_w, int src1_h,
                   int src2_w, int src2_h)

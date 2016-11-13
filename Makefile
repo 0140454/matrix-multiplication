@@ -29,6 +29,9 @@ avx_prefetch: $(COMMON_SRCS)
 strassen: $(COMMON_SRCS)
 	$(CC) $(CFLAGS) -DVERIFY=$(VERIFY) -D$@ -o $@ main.c
 
+benchmark: $(GIT_HOOKS) $(COMMON_SRCS)
+	$(CC) $(CFLAGS) -D$@ -o $@ benchmark.c
+
 cache-test: all
 	echo 1 | sudo tee /proc/sys/vm/drop_caches && perf stat --repeat 10 -e cache-misses,cache-references,instructions,cycles ./naive
 	echo 1 | sudo tee /proc/sys/vm/drop_caches && perf stat --repeat 10 -e cache-misses,cache-references,instructions,cycles ./submatrix
@@ -52,4 +55,4 @@ $(GIT_HOOKS):
 	@echo
 
 clean:
-	$(RM) $(EXECUTABLE)
+	$(RM) $(EXECUTABLE) benchmark

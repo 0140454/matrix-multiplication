@@ -12,6 +12,7 @@
 #define TEST_H 1024
 
 #include "impl.c"
+#include "list.h"
 
 static long diff_in_us(struct timespec t1, struct timespec t2)
 {
