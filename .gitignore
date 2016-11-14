@@ -5,6 +5,8 @@
 *.list
 *.swp
 *.bak
+*.txt
+*.png
 naive
 submatrix
 sse
@@ -12,3 +14,4 @@ sse_prefetch
 avx
 avx_prefetch
 strassen
+benchmark

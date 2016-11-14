@@ -32,6 +32,10 @@ strassen: $(COMMON_SRCS)
 benchmark: $(GIT_HOOKS) $(COMMON_SRCS)
 	$(CC) $(CFLAGS) -D$@ -o $@ benchmark.c
 
+run-bench: benchmark
+	./benchmark > runtime_us.txt
+	gnuplot scripts/runtime.gp
+
 cache-test: all
 	echo 1 | sudo tee /proc/sys/vm/drop_caches && perf stat --repeat 10 -e cache-misses,cache-references,instructions,cycles ./naive
 	echo 1 | sudo tee /proc/sys/vm/drop_caches && perf stat --repeat 10 -e cache-misses,cache-references,instructions,cycles ./submatrix
