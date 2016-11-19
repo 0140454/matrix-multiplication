@@ -34,6 +34,7 @@ int main(int argc, char *argv[])
     int *src1 = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
     int *src2 = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
     int *dst = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
+    int *correct = (int *) memalign(32, sizeof(int) * TEST_W * TEST_H);
 
     srand(time(NULL));
     for (int i = 0; i < TEST_H; ++i) {
@@ -45,10 +46,15 @@ int main(int argc, char *argv[])
 
     algo_t *tmp = list;
     for (tmp = list; tmp != NULL; tmp = tmp->pNext) {
+        int *output = (!strcmp(tmp->type, "naive")) ? correct : dst;
+
         clock_gettime(CLOCK_REALTIME, &start);
-        tmp->join(src1, src2, dst, TEST_W, TEST_H, TEST_W, TEST_H);
+        tmp->join(src1, src2, output, TEST_W, TEST_H, TEST_W, TEST_H);
         clock_gettime(CLOCK_REALTIME, &end);
         printf("%s %ld\n", tmp->type, diff_in_us(start, end));
+
+        assert(0 == memcmp(correct, output, sizeof(int) * TEST_W * TEST_H) &&
+               "Verification fails");
     }
 
 
