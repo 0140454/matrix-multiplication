@@ -12,7 +12,7 @@ int *Strassen_mul(int *res, int *x, int *y, int n);
 
 extern algo_t *list;
 
-FUNC_BEGIN(naive)
+FUNC_IMPL(naive)
 {
     memset(dst, 0, sizeof(int) * src1_h * src2_w);
 
@@ -24,9 +24,8 @@ FUNC_BEGIN(naive)
         }
     }
 }
-FUNC_END(naive)
 
-FUNC_BEGIN(submatrix)
+FUNC_IMPL(submatrix)
 {
     memset(dst, 0, sizeof(int) * src1_h * src2_w);
 
@@ -45,9 +44,8 @@ FUNC_BEGIN(submatrix)
         }
     }
 }
-FUNC_END(submatrix)
 
-FUNC_BEGIN(sse)
+FUNC_IMPL(sse)
 {
     for (int x = 0; x < src1_h; x += 4) {
         for (int y = 0; y < src2_w; y += 4) {
@@ -166,9 +164,8 @@ FUNC_BEGIN(sse)
         }
     }
 }
-FUNC_END(sse)
 
-FUNC_BEGIN(sse_prefetch)
+FUNC_IMPL(sse_prefetch)
 {
     for (int x = 0; x < src1_h; x += 4) {
         for (int y = 0; y < src2_w; y += 4) {
@@ -293,9 +290,8 @@ FUNC_BEGIN(sse_prefetch)
         }
     }
 }
-FUNC_END(sse_prefetch)
 
-FUNC_BEGIN(avx)
+FUNC_IMPL(avx)
 {
     for (int i = 0; i < src1_h; i += 8) {
         for (int j = 0; j < src2_w; j += 8) {
@@ -613,9 +609,8 @@ FUNC_BEGIN(avx)
         }
     }
 }
-FUNC_END(avx)
 
-FUNC_BEGIN(avx_prefetch)
+FUNC_IMPL(avx_prefetch)
 {
     for (int i = 0; i < src1_h; i += 8) {
         for (int j = 0; j < src2_w; j += 8) {
@@ -943,7 +938,6 @@ FUNC_BEGIN(avx_prefetch)
         }
     }
 }
-FUNC_END(avx_prefetch)
 
 int *Strassen_helper(int *res, int *src1, int *src2, int n)
 {
@@ -1077,12 +1071,11 @@ int *Strassen_mul(int *dst, int *a, int *b, int n)
     return Strassen_helper(dst, a, b, n);
 }
 
-FUNC_BEGIN(Strassen)
+FUNC_IMPL(Strassen)
 {
     memset(dst, 0, sizeof(int) * src1_h * src2_w);
 
     Strassen_helper(dst, src1, src2, src1_w);
 }
-FUNC_END(Strassen)
 
 #endif
