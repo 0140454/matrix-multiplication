@@ -7,8 +7,8 @@
 #if defined(benchmark)
 
 #define FUNC_END(name) \
-		algo_t name = { .type = #name, .join = name ## _multiply, .pNext = NULL }; \
 		__attribute__((constructor)) void append_##name() { \
+			static algo_t name = { .type = #name, .join = name ## _multiply, .pNext = NULL }; \
 			if (list == NULL) { list = &name; } \
 			else { \
 				algo_t *tmp; \
